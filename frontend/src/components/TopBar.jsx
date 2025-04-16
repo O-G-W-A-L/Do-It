@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 export default function TopBar() {
   const { user, logout } = useAuth();

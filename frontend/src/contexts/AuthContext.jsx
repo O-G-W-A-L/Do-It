@@ -1,45 +1,48 @@
+// src/contexts/AuthContext.jsx
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-const AuthContext = createContext();
+// 🔥 Exporting AuthContext properly
+export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null);
-  const [error,   setError]   = useState(null);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // On mount: if we have a token, fetch the user
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      api.get('/api/auth/user/')
-        .then(res => setUser(res.data))
-        .catch(() => setUser(null))
-        .finally(() => setLoading(false));
-    } else {
+  // 🔄 Reusable token fetch function
+  const fetchUser = async () => {
+    try {
+      const res = await api.get('/api/auth/user/');
+      setUser(res.data);
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    token ? fetchUser() : setLoading(false);
   }, []);
 
-  // Login: store tokens and fetch profile
   const login = async (username, password) => {
     setError(null);
     try {
       const { data } = await api.post('/api/auth/login/', { username, password });
-      const { access, refresh } = data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      const me = await api.get('/api/auth/user/');
-      setUser(me.data);
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
+      await fetchUser();
       navigate('/dashboard');
     } catch {
       setError('Invalid credentials');
     }
   };
 
-  // Signup: register, then send to login page
   const signup = async (username, email, password1, password2) => {
     setError(null);
     try {
@@ -47,16 +50,11 @@ export function AuthProvider({ children }) {
       navigate('/login');
     } catch (err) {
       const data = err.response?.data;
-      if (data) {
-        const [field] = Object.keys(data);
-        setError(data[field][0]);
-      } else {
-        setError('Registration failed');
-      }
+      const field = Object.keys(data || {})[0];
+      setError(data?.[field]?.[0] || 'Registration failed');
     }
   };
 
-  // Logout: drop tokens & user
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -71,4 +69,5 @@ export function AuthProvider({ children }) {
   );
 }
 
+// 👇 Still exporting the hook directly (optional if you're using this elsewhere)
 export const useAuth = () => useContext(AuthContext);

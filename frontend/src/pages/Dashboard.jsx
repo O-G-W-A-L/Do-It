@@ -1,5 +1,5 @@
 import React from 'react';
-//import TopBar from '../components/TopBar';
+import TopBar from '../components/TopBar';
 import Sidebar from '../components/Sidebar';
 import TaskList from '../components/TaskList';
 import { useTasks } from '../hooks/useTasks';
