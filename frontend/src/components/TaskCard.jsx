@@ -1,24 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { FiChevronRight } from 'react-icons/fi';
 
-export default function TaskCard({ task }) {
+export default function TaskCard({ task, onClick }) {
   return (
-    <li className="bg-white p-4 rounded shadow flex justify-between items-center">
+    <li
+      onClick={onClick}
+      className="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer flex justify-between items-center"
+    >
       <div>
-        <Link
-          to={`/tasks/${task.id}`}
-          className="text-lg font-medium hover:underline"
-        >
-          {task.title}
-        </Link>
-        <div className="text-sm text-gray-500">
-          Due: {new Date(task.dueDate).toLocaleDateString()}
-        </div>
+        <h4 className="font-semibold">{task.title}</h4>
+        {task.dueDate && (
+          <small className="text-gray-500">{new Date(task.dueDate).toLocaleDateString()}</small>
+        )}
       </div>
-      <button className="px-3 py-1 border rounded">
-        {task.completed ? '✓' : 'Mark Done'}
-      </button>
+      <FiChevronRight className="text-gray-400" />
     </li>
   );
 }
-

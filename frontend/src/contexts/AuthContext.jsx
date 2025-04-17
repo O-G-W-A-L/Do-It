@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-// 🔥 Exporting AuthContext properly
+// Exporting AuthContext properly
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // 🔄 Reusable token fetch function
+  // Reusable token fetch function
   const fetchUser = async () => {
     try {
       const res = await api.get('/api/auth/user/');
@@ -69,5 +69,5 @@ export function AuthProvider({ children }) {
   );
 }
 
-// 👇 Still exporting the hook directly (optional if you're using this elsewhere)
+// Still exporting the hook directly (optional if you're using this elsewhere)
 export const useAuth = () => useContext(AuthContext);
