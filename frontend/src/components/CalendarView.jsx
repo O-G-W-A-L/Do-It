@@ -11,7 +11,7 @@ export default function CalendarView({ tasks, onEventDrop, onDateCreate }) {
     setEvents(tasks.map(t => ({
       id: t.id,
       title: t.title,
-      start: t.dueDate,
+      start: t.due_date,
       color: t.priority === 'high' ? '#e53e3e' : '#3182ce',
     })));
   }, [tasks]);
@@ -29,10 +29,10 @@ export default function CalendarView({ tasks, onEventDrop, onDateCreate }) {
       editable
       dateClick={info => {
         const title = prompt('New task title:');
-        if (title) onDateCreate({ title, dueDate: info.dateStr });
+        if (title) onDateCreate({ title, due_date: info.dateStr });
       }}
       eventDrop={info => {
-        onEventDrop(info.event.id, { dueDate: info.event.startStr });
+        onEventDrop(info.event.id, { due_date: info.event.startStr });
       }}
       height="auto"
     />

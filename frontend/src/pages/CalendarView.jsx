@@ -12,8 +12,8 @@ export default function CalendarView() {
   const events = tasks.map(t => ({
     id: t.id,
     title: t.title,
-    start: t.dueDate,
-    end: t.dueDate
+    start: t.due_date,
+    end: t.due_date
   }));
 
   return (

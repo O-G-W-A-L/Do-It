@@ -18,7 +18,7 @@ export default function TaskDetail({ task = {}, onSave }) {
     id: task.id,
     title: '',
     description: '',
-    dueDate: '',
+    due_date: '',
     priority: 'Should Do',
     type: 'Personal',
     subtasks: [],
@@ -31,7 +31,7 @@ export default function TaskDetail({ task = {}, onSave }) {
         id: task.id,
         title: task.title || '',
         description: task.description || '',
-        dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
+        due_date: task.due_date ? task.due_date.slice(0, 10) : '',
         priority: task.priority || 'Should Do',
         type: task.type || 'Personal',
         subtasks: task.subtasks || [],
@@ -119,9 +119,9 @@ export default function TaskDetail({ task = {}, onSave }) {
         <label className="block text-sm font-medium">Due Date</label>
         <input
           type="date"
-          name="dueDate"
-          value={form.dueDate}
-          onChange={e => change('dueDate', e.target.value)}
+          name="due_date"
+          value={form.due_date}
+          onChange={e => change('due_date', e.target.value)}
           className="mt-1 w-full p-2 border rounded"
         />
       </div>

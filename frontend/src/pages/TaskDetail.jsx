@@ -1,66 +1,125 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchTaskById, updateTask } from '../api/tasks';
-import RichTextEditor from '../components/RichTextEditor';
-import DatePicker from '../components/DatePicker';
-import Select from '../components/Select';
+import React, { useState, useEffect } from 'react';
 
-export default function TaskDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [form, setForm] = useState({});
+const URGENCY = ['Must Do', 'Should Do', 'Could Do', 'Might Do'];
+
+export default function TaskDetail({ task = {}, onSave }) {
+  const [data, setData] = useState({
+    title: '',
+    description: '',
+    due_date: new Date().toISOString().split('T')[0],
+    priority: 'Should Do',
+  });
+
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    fetchTaskById(id).then(data => {
-      setTask(data);
-      setForm(data);
-    });
-  }, [id]);
+    if (task.id !== undefined) {
+      const preloadedData = {
+        title: task.title || '',
+        description: task.description || '',
+        due_date: task.due_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        priority: task.priority || 'Should Do',
+      };
+      console.log("Loaded task for editing:", preloadedData);
+      setData(preloadedData);
+    }
+  }, [task]);
 
-  const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+  const validate = () => {
+    const errs = {};
+    if (!data.title.trim()) errs.title = 'Title is required';
+    if (!data.due_date) errs.due_date = 'Please select a due date';
+    else if (isNaN(new Date(data.due_date).getTime())) errs.due_date = 'Invalid date';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async e => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: undefined }));
+    console.log(`Changed ${name}:`, value);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    await updateTask(id, form);
-    navigate('/');
-  };
+    if (!validate()) {
+      console.warn("Validation failed:", errors);
+      return;
+    }
 
-  if (!task) return <div>Loading…</div>;
+    const payload = {
+      ...data,
+      due_date: new Date(data.due_date).toISOString(), // Send as ISO string
+    };
+
+    console.log("Submitting task payload:", payload);
+
+    try {
+      const result = await onSave(payload);
+      console.log("onSave result:", result);
+      setData({
+        title: '',
+        description: '',
+        due_date: new Date().toISOString().split('T')[0],
+        priority: 'Should Do',
+      });
+    } catch (err) {
+      console.error('Error during submission:', err);
+      setErrors({
+        submit: err.response?.data?.due_date?.[0] || err.message || 'Submission failed',
+      });
+    }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-semibold mb-4">Edit Task</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          value={form.title}
-          onChange={e => handleChange('title', e.target.value)}
-          className="w-full border rounded p-2"
-        />
-        <RichTextEditor
-          value={form.description}
-          onChange={value => handleChange('description', value)}
-        />
-        <DatePicker
-          value={form.dueDate}
-          onChange={date => handleChange('dueDate', date)}
-        />
-        <Select
-          label="Priority"
-          options={['Low','Medium','High']}
-          value={form.priority}
-          onChange={val => handleChange('priority', val)}
-        />
-        {/* Add more fields: status, subtasks, reminders, tags, etc. */}
-        <div className="flex justify-end space-x-2">
-          <button type="button" onClick={() => navigate(-1)} className="px-4 py-2">Cancel</button>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-        </div>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {errors.submit && <div className="text-red-700">{errors.submit}</div>}
+
+      <input
+        name="title"
+        value={data.title}
+        onChange={handleChange}
+        placeholder="Title"
+        required
+        className="w-full border rounded px-3 py-2"
+      />
+      {errors.title && <p className="text-red-500">{errors.title}</p>}
+
+      <textarea
+        name="description"
+        value={data.description}
+        onChange={handleChange}
+        className="w-full border rounded px-3 py-2"
+      />
+
+      <input
+        name="due_date"
+        type="date"
+        value={data.due_date}
+        onChange={handleChange}
+        required
+        className="w-full border rounded px-3 py-2"
+      />
+      {errors.due_date && <p className="text-red-500">{errors.due_date}</p>}
+
+      <select
+        name="priority"
+        value={data.priority}
+        onChange={handleChange}
+        className="w-full border rounded px-3 py-2"
+      >
+        {URGENCY.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+      >
+        Save Task
+      </button>
+    </form>
   );
 }
-

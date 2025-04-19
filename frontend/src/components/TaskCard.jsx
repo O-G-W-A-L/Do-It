@@ -9,8 +9,8 @@ export default function TaskCard({ task, onClick }) {
     >
       <div>
         <h4 className="font-semibold">{task.title}</h4>
-        {task.dueDate && (
-          <small className="text-gray-500">{new Date(task.dueDate).toLocaleDateString()}</small>
+        {task.due_date && (
+          <small className="text-gray-500">{new Date(task.due_date).toLocaleDateString()}</small>
         )}
       </div>
       <FiChevronRight className="text-gray-400" />

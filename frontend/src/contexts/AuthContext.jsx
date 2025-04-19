@@ -1,10 +1,7 @@
-// src/contexts/AuthContext.jsx
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-// Exporting AuthContext properly
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -13,21 +10,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Reusable token fetch function
   const fetchUser = async () => {
     try {
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No token found');
+      
       const res = await api.get('/api/auth/user/');
       setUser(res.data);
-    } catch {
+    } catch (err) {
       setUser(null);
+      setError('Failed to fetch user');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    token ? fetchUser() : setLoading(false);
+    fetchUser();
   }, []);
 
   const login = async (username, password) => {
@@ -38,7 +37,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('refresh_token', data.refresh);
       await fetchUser();
       navigate('/dashboard');
-    } catch {
+    } catch (err) {
       setError('Invalid credentials');
     }
   };
@@ -69,5 +68,4 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Still exporting the hook directly (optional if you're using this elsewhere)
 export const useAuth = () => useContext(AuthContext);

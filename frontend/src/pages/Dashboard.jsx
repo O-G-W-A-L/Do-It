@@ -1,111 +1,112 @@
-import React, { useState } from 'react';
-import Sidebar from '../components/Sidebar';
-import TopBar from '../components/TopBar';
-import TaskList from '../components/TaskList';
-import TaskDetail from '../components/TaskDetail';
+// src/components/Dashboard.jsx
+import React, { useState, useCallback } from 'react';
+import Sidebar     from '../components/Sidebar';
+import TopBar      from '../components/TopBar';
+import TaskList    from '../components/TaskList';
 import CalendarView from '../components/CalendarView';
-import Priorities from '../components/Priorities';
+import Priorities  from '../components/Priorities';
+import TaskDetail  from '../components/TaskDetail';
 import { useTasks } from '../hooks/useTasks';
 
 export default function Dashboard() {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedTask, setSelectedTask] = useState(null);
-  const { tasks, updateTask, createTask } = useTasks();
+  const [view, setView]               = useState('home');
+  const [selectedTask, setSelected]   = useState(null);
+  const [operationError, setOpError]  = useState(null);
+  const { tasks, isLoading, error, createTask, updateTask } = useTasks();
 
-  // Create or update, then reset to home
-  const handleSave = taskData => {
-    if (taskData.id) updateTask(taskData.id, taskData);
-    else createTask(taskData);
-    setSelectedTask(null);
-    setCurrentView('home');
-  };
+  // Called by TaskDetail with new or edited data
+  const handleSave = useCallback(async (taskData) => {
+    setOpError(null);
+    try {
+      if (selectedTask?.id) {
+        await updateTask(selectedTask.id, taskData);
+      } else {
+        await createTask(taskData);
+      }
+      setSelected(null);
+      setView('home');
+    } catch (err) {
+      setOpError(err.message);
+    }
+  }, [selectedTask, createTask, updateTask]);
 
-  // Handlers
-  const selectTask = task => {
-    setSelectedTask(task);
-    setCurrentView('edit');
-  };
+  // Prepare form for creating a new task
   const startCreate = () => {
-    setSelectedTask({});
-    setCurrentView('create');
+    setSelected({
+      title:       '',
+      description: '',
+      due_date:    new Date().toISOString().split('T')[0],
+      priority:    'Should Do',
+    });
+    setView('create');
+    setOpError(null);
   };
 
-  // Filters
-  const todayTasks = tasks.filter(t => {
-    const today = new Date();
-    const d = new Date(t.dueDate);
-    return (
-      d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-    );
-  });
-  const upcomingTasks = tasks.filter(t => {
-    const today = new Date(),
-      d = new Date(t.dueDate);
-    const days = (d - today) / (1000 * 60 * 60 * 24);
-    return days > 0 && days <= 7;
-  });
-  const urgencyTasks = tasks.filter(t => {
-    const today = new Date(),
-      d = new Date(t.dueDate);
-    const days = (d - today) / (1000 * 60 * 60 * 24);
-    return days <= 3 && t.priority === 'Must Do';
-  });
+  // Prepare form for editing an existing task
+  const editTask = (task) => {
+    setSelected(task);
+    setView('edit');
+    setOpError(null);
+  };
 
-  // Main content
-  let content;
-  if (currentView === 'create' || currentView === 'edit') {
-    content = <TaskDetail task={selectedTask} onSave={handleSave} />;
-  } else {
-    switch (currentView) {
+  // Determine which main view to render
+  const renderMain = () => {
+    if (isLoading) return <div>Loading...</div>;
+    if (error)     return <div className="text-red-600">Error: {error}</div>;
+
+    if (view === 'create' || view === 'edit') {
+      return (
+        <>
+          {operationError && (
+            <div className="mb-4 bg-red-100 border-red-400 text-red-700 px-4 py-3 rounded">
+              {operationError}
+            </div>
+          )}
+          {/* Pass createTask/updateTask logic into the form */}
+          <TaskDetail task={selectedTask} onSave={handleSave} />
+        </>
+      );
+    }
+
+    switch (view) {
       case 'today':
-        content = <TaskList tasks={todayTasks} onSelectTask={selectTask} />;
-        break;
       case 'upcoming':
-        content = <TaskList tasks={upcomingTasks} onSelectTask={selectTask} />;
-        break;
+        return <TaskList tasks={tasks} onSelectTask={editTask} />;
       case 'priorities':
-        content = <Priorities tasks={urgencyTasks} onSelectTask={selectTask} />;
-        break;
+        return <Priorities tasks={tasks} onSelectTask={editTask} />;
       case 'calendar':
-        content = (
+        return (
           <CalendarView
             tasks={tasks}
-            onDateCreate={info => {
-              setSelectedTask({ title: '', description: '', dueDate: info.dateStr });
-              setCurrentView('create');
+            onDateCreate={({ dateStr }) => {
+              setSelected({ title: '', description: '', due_date: dateStr, priority: 'Should Do' });
+              setView('create');
             }}
-            onEventDrop={(id, upd) => updateTask(id, upd)}
+            onEventDrop={async (id, updateInfo) => {
+              try { await updateTask(id, updateInfo); }
+              catch (err) { setOpError(err.message); }
+            }}
           />
         );
-        break;
       default:
-        content = <div className="p-6 text-gray-500">Select a view from the sidebar</div>;
+        return <div>Select a view or create a new task</div>;
     }
-  }
+  };
 
   return (
-    <div className="flex h-screen bg-[#f7f8f6] text-gray-800">
+    <div className="flex h-screen">
       <Sidebar
-        currentView={currentView}
-        onViewChange={view => {
-          setCurrentView(view);
-          setSelectedTask(null);
-        }}
+        currentView={view}
+        onViewChange={(v) => { setView(v); setSelected(null); setOpError(null); }}
         onAddTask={startCreate}
       />
-
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <TopBar
-          title={
-            currentView === 'home'
-              ? 'Home'
-              : currentView.charAt(0).toUpperCase() + currentView.slice(1)
-          }
-        />
-
-        <main className="flex-1 overflow-auto p-6 w-full">{content}</main>
+      <div className="flex-1 flex flex-col">
+        <TopBar title={
+          view === 'create' ? 'New Task'
+          : view === 'edit'   ? 'Edit Task'
+          : view.charAt(0).toUpperCase() + view.slice(1)
+        }/>
+        <main className="p-6 overflow-auto">{renderMain()}</main>
       </div>
     </div>
   );
