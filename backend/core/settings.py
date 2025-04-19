@@ -61,11 +61,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'your_actual_db_name',
-        'USER': 'your_actual_db_user',
-        'PASSWORD': 'your_actual_db_password',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': 'do_it_db',         
+        'USER': 'do_it_user',       
+        'PASSWORD': 'securepassword', 
+        'HOST': 'localhost',       
+        'PORT': '5432',          
     }
 }
 
@@ -101,7 +101,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     )
 }
 

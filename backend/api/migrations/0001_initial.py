@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=255)),
                 ('description', models.TextField(blank=True)),
-                ('dueDate', models.DateTimeField()),
+                ('due_date', models.DateTimeField()),
                 ('priority', models.CharField(choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], default='Medium', max_length=10)),
                 ('focusBlock', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
