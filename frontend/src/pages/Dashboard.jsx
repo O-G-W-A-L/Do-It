@@ -1,4 +1,3 @@
-// src/components/Dashboard.jsx
 import React, { useState, useCallback } from 'react';
 import Sidebar     from '../components/Sidebar';
 import TopBar      from '../components/TopBar';
@@ -7,6 +6,7 @@ import CalendarView from '../components/CalendarView';
 import Priorities  from '../components/Priorities';
 import TaskDetail  from '../components/TaskDetail';
 import { useTasks } from '../hooks/useTasks';
+import RoutineTracker from '../components/RoutineTracker';
 
 export default function Dashboard() {
   const [view, setView]               = useState('home');
@@ -88,6 +88,8 @@ export default function Dashboard() {
             }}
           />
         );
+        case 'routine':
+          return <RoutineTracker />;
       default:
         return <div>Select a view or create a new task</div>;
     }
