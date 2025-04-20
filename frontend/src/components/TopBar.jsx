@@ -2,7 +2,8 @@ import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function TopBar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+
   return (
     <header className="flex items-center justify-between bg-white p-4 shadow">
       <input
@@ -11,9 +12,6 @@ export default function TopBar() {
         className="border rounded px-3 py-1"
       />
       <div className="flex items-center space-x-4">
-        <button onClick={logout} className="text-red-500 hover:underline">
-          Log Out
-        </button>
         <img
           src={user?.avatarUrl || '/assets/default-avatar.png'}
           alt="Profile"
@@ -23,4 +21,3 @@ export default function TopBar() {
     </header>
   );
 }
-

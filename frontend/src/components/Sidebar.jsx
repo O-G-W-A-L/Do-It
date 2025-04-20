@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import {
   FiHome, FiGrid, FiClock, FiAlertTriangle,
-  FiCalendar, FiFolder, FiRepeat, FiBarChart2, FiPlus
+  FiCalendar, FiFolder, FiRepeat, FiBarChart2,
+  FiPlus, FiLogOut
 } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 
 const MENU = [
   { key: 'home',       icon: FiHome,          label: 'Home' },
@@ -17,6 +19,7 @@ const MENU = [
 
 export default function Sidebar({ currentView, onViewChange, onAddTask }) {
   const [openTasks, setOpenTasks] = useState(true);
+  const { logout } = useAuth();
 
   return (
     <aside className="w-64 bg-white shadow-md h-screen flex flex-col p-4">
@@ -85,6 +88,14 @@ export default function Sidebar({ currentView, onViewChange, onAddTask }) {
           </button>
         ))}
       </nav>
+
+      {/* Logout Button at Bottom */}
+      <button
+        onClick={logout}
+        className="mt-4 flex items-center w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition"
+      >
+        <FiLogOut className="mr-2" /> Log Out
+      </button>
     </aside>
   );
 }
