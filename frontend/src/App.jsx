@@ -1,11 +1,15 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// Pages
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import EmailVerification from './pages/EmailVerification'; // ✅ Add the import
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -17,8 +21,7 @@ export default function App() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // Use the correct endpoint
-    axios.get('auth/hello/')
+    axios.get('http://localhost:8000/api/hello/')
       .then((response) => {
         setMessage(response.data.message);
       })
@@ -44,6 +47,7 @@ export default function App() {
                 </Protected>
               }
             />
+            <Route path="/verify-email/:key" element={<EmailVerification />} /> {/* ✅ Route added */}
           </Routes>
         </div>
       </AuthProvider>
