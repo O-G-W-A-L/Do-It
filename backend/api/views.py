@@ -1,27 +1,25 @@
+# api/views.py
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from allauth.account.views import ConfirmEmailView  # 👈 Import this
 
 from .models import Task, Project, Routine, Goal, FileAttachment, Notification
 from .serializers import (
-    RegisterSerializer,
-    UserSerializer,
-    CustomTokenObtainPairSerializer,
-    TaskSerializer,
-    ProjectSerializer,
-    RoutineSerializer,
-    GoalSerializer,
-    FileAttachmentSerializer,
-    NotificationSerializer,
+    RegisterSerializer, VerifyEmailSerializer, ResendVerificationSerializer,
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
+    CustomTokenObtainPairSerializer, UserSerializer,
+    TaskSerializer, ProjectSerializer, RoutineSerializer,
+    GoalSerializer, FileAttachmentSerializer, NotificationSerializer,
 )
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def hello_world(request):
-    return Response({'message': 'Hello, world!'})
+# 👇 Custom email confirmation view
+class CustomConfirmEmailView(ConfirmEmailView):
+    template_name = "account/email_confirm.html"
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -37,8 +35,45 @@ def register(request):
         }, status=201)
     return Response(serializer.errors, status=400)
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    serializer = VerifyEmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    return Response({'detail': 'Email verified.'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification(request):
+    serializer = ResendVerificationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response({'detail': 'Verification email resent.'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response({'detail': 'Password reset email sent.'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_confirm(request):
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response({'detail': 'Password has been reset.'}, status=status.HTTP_200_OK)
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def hello_world(request):
+    return Response({'message': 'Hello, world!'})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -3,9 +3,12 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
-    hello_world, register, get_user, MyTokenObtainPairView,
-    TaskViewSet, ProjectViewSet, RoutineViewSet, GoalViewSet,
-    FileAttachmentViewSet, NotificationViewSet
+    hello_world,
+    get_user,
+    MyTokenObtainPairView,
+    TaskViewSet, ProjectViewSet, RoutineViewSet,
+    GoalViewSet, FileAttachmentViewSet, NotificationViewSet,
+    CustomConfirmEmailView,
 )
 
 router = DefaultRouter()
@@ -18,9 +21,20 @@ router.register(r'notifications', NotificationViewSet)
 
 urlpatterns = [
     path('hello/', hello_world),
-    path('auth/register/', register),
-    path('auth/login/', MyTokenObtainPairView.as_view()),
-    path('auth/refresh/', TokenRefreshView.as_view()),
     path('auth/user/', get_user),
+    path('auth/login/', MyTokenObtainPairView.as_view(), name='custom_login'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    path(
+        'auth/registration/account-confirm-email/<str:key>/',
+        CustomConfirmEmailView.as_view(),
+        name='account_confirm_email'
+    ),
+
+    # dj-rest-auth endpoints
+    path('auth/', include('dj_rest_auth.urls')),
+    path('auth/registration/', include('dj_rest_auth.registration.urls')),
+
+    # All app routes
     path('', include(router.urls)),
 ]
