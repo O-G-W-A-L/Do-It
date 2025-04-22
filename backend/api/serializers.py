@@ -176,7 +176,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model            = Task
         fields           = (
             'id', 'user', 'title', 'description',
-            'due_date', 'priority',
+            'due_date', 'priority', 'routine', 'goal',
             'focus_block', 'is_done',
             'created_at', 'updated_at',
         )
