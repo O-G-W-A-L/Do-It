@@ -1,100 +1,86 @@
 import React, { useState, useEffect } from 'react';
+import TaskMenu from './TaskMenu';
 
-const URGENCY_OPTIONS = [
-  'Must Do',
-  'Should Do',
-  'Could Do',
-  'Might Do'
-];
-
-const TYPE_OPTIONS = [
-  'Personal',
-  'Work',
-  'Routine'
-];
+const URGENCY_OPTIONS = ['Must Do', 'Should Do', 'Could Do', 'Might Do'];
+const TYPE_OPTIONS = ['Personal', 'Work', 'Routine'];
 
 export default function TaskDetail({ task = {}, onSave }) {
   const [form, setForm] = useState({
-    id: task.id,
+    id: task.id || null,
     title: '',
-    description: '',
     due_date: '',
     priority: 'Should Do',
     type: 'Personal',
     subtasks: [],
-    newSubtask: ''
+    newSubtask: '',
   });
 
   useEffect(() => {
     if (task) {
       setForm({
-        id: task.id,
+        id: task.id || null,
         title: task.title || '',
-        description: task.description || '',
         due_date: task.due_date ? task.due_date.slice(0, 10) : '',
         priority: task.priority || 'Should Do',
         type: task.type || 'Personal',
         subtasks: task.subtasks || [],
-        newSubtask: ''
+        newSubtask: '',
       });
     }
   }, [task]);
 
-  const change = (name, value) =>
-    setForm(f => ({ ...f, [name]: value }));
+  const handleChange = (name, value) =>
+    setForm((prev) => ({ ...prev, [name]: value }));
 
-  const addSub = () => {
+  const addSubtask = () => {
     if (form.newSubtask.trim()) {
-      setForm(f => ({
-        ...f,
-        subtasks: [...f.subtasks, { title: f.newSubtask, done: false }],
-        newSubtask: ''
+      setForm((prev) => ({
+        ...prev,
+        subtasks: [...prev.subtasks, { title: prev.newSubtask, done: false }],
+        newSubtask: '',
       }));
     }
   };
 
-  const submit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const { newSubtask, ...payload } = form;
     onSave(payload);
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow-md">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Task Details</h2>
+        <TaskMenu task={form} />
+      </div>
+
       {/* Title */}
       <div>
         <label className="block text-sm font-medium">Task Name</label>
         <input
+          type="text"
           name="title"
           value={form.title}
-          onChange={e => change('title', e.target.value)}
+          onChange={(e) => handleChange('title', e.target.value)}
           className="mt-1 w-full p-2 border rounded"
           required
         />
       </div>
 
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium">Description</label>
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={e => change('description', e.target.value)}
-          className="mt-1 w-full p-2 border rounded h-24 resize-none"
-        />
-      </div>
-
-      {/* Urgency */}
+      {/* Priority */}
       <div>
         <label className="block text-sm font-medium">Urgency</label>
         <select
           name="priority"
           value={form.priority}
-          onChange={e => change('priority', e.target.value)}
+          onChange={(e) => handleChange('priority', e.target.value)}
           className="mt-1 w-full p-2 border rounded"
         >
-          {URGENCY_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
+          {URGENCY_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
           ))}
         </select>
       </div>
@@ -105,11 +91,13 @@ export default function TaskDetail({ task = {}, onSave }) {
         <select
           name="type"
           value={form.type}
-          onChange={e => change('type', e.target.value)}
+          onChange={(e) => handleChange('type', e.target.value)}
           className="mt-1 w-full p-2 border rounded"
         >
-          {TYPE_OPTIONS.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
+          {TYPE_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
           ))}
         </select>
       </div>
@@ -121,7 +109,7 @@ export default function TaskDetail({ task = {}, onSave }) {
           type="date"
           name="due_date"
           value={form.due_date}
-          onChange={e => change('due_date', e.target.value)}
+          onChange={(e) => handleChange('due_date', e.target.value)}
           className="mt-1 w-full p-2 border rounded"
         />
       </div>
@@ -129,11 +117,11 @@ export default function TaskDetail({ task = {}, onSave }) {
       {/* Subtasks */}
       <div>
         <label className="block text-sm font-medium mb-1">Subtasks</label>
-        <ul className="mb-2 space-y-2">
-          {form.subtasks.map((st, i) => (
+        <ul className="space-y-2 mb-2">
+          {form.subtasks.map((sub, i) => (
             <li key={i} className="flex items-center gap-2">
-              <input type="checkbox" checked={st.done} readOnly />
-              <span>{st.title}</span>
+              <input type="checkbox" checked={sub.done} readOnly />
+              <span>{sub.title}</span>
             </li>
           ))}
         </ul>
@@ -141,13 +129,13 @@ export default function TaskDetail({ task = {}, onSave }) {
           <input
             type="text"
             value={form.newSubtask}
-            onChange={e => change('newSubtask', e.target.value)}
+            onChange={(e) => handleChange('newSubtask', e.target.value)}
             placeholder="New subtask"
             className="flex-1 p-2 border rounded"
           />
           <button
             type="button"
-            onClick={addSub}
+            onClick={addSubtask}
             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >
             + Add
@@ -155,10 +143,10 @@ export default function TaskDetail({ task = {}, onSave }) {
         </div>
       </div>
 
-      {/* Save */}
+      {/* Submit */}
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
       >
         {form.id ? 'Save Changes' : 'Create Task'}
       </button>
