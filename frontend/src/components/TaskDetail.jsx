@@ -1,155 +1,104 @@
-import React, { useState, useEffect } from 'react';
+// src/components/TaskDetail.jsx
+import React from 'react';
+import PropTypes from 'prop-types';
 import TaskMenu from './TaskMenu';
 
-const URGENCY_OPTIONS = ['Must Do', 'Should Do', 'Could Do', 'Might Do'];
-const TYPE_OPTIONS = ['Personal', 'Work', 'Routine'];
+const URGENCY_BADGES = {
+  'Must Do':   'bg-red-100 text-red-700',
+  'Should Do': 'bg-yellow-100 text-yellow-700',
+  'Could Do':  'bg-blue-100 text-blue-700',
+  'Might Do':  'bg-gray-100 text-gray-700',
+};
 
-export default function TaskDetail({ task = {}, onSave }) {
-  const [form, setForm] = useState({
-    id: task.id || null,
-    title: '',
-    due_date: '',
-    priority: 'Should Do',
-    type: 'Personal',
-    subtasks: [],
-    newSubtask: '',
-  });
+const TYPE_BADGES = {
+  Personal: 'bg-blue-100 text-blue-800',
+  Work:     'bg-green-100 text-green-800',
+  Routine:  'bg-purple-100 text-purple-800',
+  Fitness:  'bg-red-100 text-red-800',
+};
 
-  useEffect(() => {
-    if (task) {
-      setForm({
-        id: task.id || null,
-        title: task.title || '',
-        due_date: task.due_date ? task.due_date.slice(0, 10) : '',
-        priority: task.priority || 'Should Do',
-        type: task.type || 'Personal',
-        subtasks: task.subtasks || [],
-        newSubtask: '',
-      });
-    }
-  }, [task]);
+export default function TaskDetail({ task = null }) {
+  if (!task) {
+    return <div className="p-4 text-gray-500">No task selected.</div>;
+  }
 
-  const handleChange = (name, value) =>
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-  const addSubtask = () => {
-    if (form.newSubtask.trim()) {
-      setForm((prev) => ({
-        ...prev,
-        subtasks: [...prev.subtasks, { title: prev.newSubtask, done: false }],
-        newSubtask: '',
-      }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const { newSubtask, ...payload } = form;
-    onSave(payload);
-  };
+  const dueDateStr = task.due_date
+    ? new Date(task.due_date).toLocaleDateString(undefined, {
+        year:  'numeric',
+        month: 'short',
+        day:   'numeric'
+      })
+    : '—';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Task Details</h2>
-        <TaskMenu task={form} />
+    <div className="bg-white rounded-lg shadow p-6 space-y-6">
+      {/* Header with Title + Menu */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">{task.title}</h2>
+        <TaskMenu task={task} />
       </div>
 
-      {/* Title */}
-      <div>
-        <label className="block text-sm font-medium">Task Name</label>
-        <input
-          type="text"
-          name="title"
-          value={form.title}
-          onChange={(e) => handleChange('title', e.target.value)}
-          className="mt-1 w-full p-2 border rounded"
-          required
-        />
-      </div>
-
-      {/* Priority */}
-      <div>
-        <label className="block text-sm font-medium">Urgency</label>
-        <select
-          name="priority"
-          value={form.priority}
-          onChange={(e) => handleChange('priority', e.target.value)}
-          className="mt-1 w-full p-2 border rounded"
-        >
-          {URGENCY_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Type */}
-      <div>
-        <label className="block text-sm font-medium">Type</label>
-        <select
-          name="type"
-          value={form.type}
-          onChange={(e) => handleChange('type', e.target.value)}
-          className="mt-1 w-full p-2 border rounded"
-        >
-          {TYPE_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+      {/* Priority & Type Badges */}
+      <div className="flex flex-wrap gap-2">
+        {task.priority && (
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${URGENCY_BADGES[task.priority]}`}
+          >
+            {task.priority}
+          </span>
+        )}
+        {task.type && (
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${TYPE_BADGES[task.type]}`}
+          >
+            {task.type}
+          </span>
+        )}
       </div>
 
       {/* Due Date */}
       <div>
-        <label className="block text-sm font-medium">Due Date</label>
-        <input
-          type="date"
-          name="due_date"
-          value={form.due_date}
-          onChange={(e) => handleChange('due_date', e.target.value)}
-          className="mt-1 w-full p-2 border rounded"
-        />
+        <h3 className="text-sm font-medium text-gray-600">Due Date</h3>
+        <p className="mt-1 text-gray-800">{dueDateStr}</p>
       </div>
 
       {/* Subtasks */}
-      <div>
-        <label className="block text-sm font-medium mb-1">Subtasks</label>
-        <ul className="space-y-2 mb-2">
-          {form.subtasks.map((sub, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <input type="checkbox" checked={sub.done} readOnly />
-              <span>{sub.title}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={form.newSubtask}
-            onChange={(e) => handleChange('newSubtask', e.target.value)}
-            placeholder="New subtask"
-            className="flex-1 p-2 border rounded"
-          />
-          <button
-            type="button"
-            onClick={addSubtask}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            + Add
-          </button>
+      {Array.isArray(task.subtasks) && task.subtasks.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-gray-600 mb-2">Subtasks</h3>
+          <ul className="space-y-2">
+            {task.subtasks.map((st, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={st.done}
+                  readOnly
+                  className="form-checkbox"
+                />
+                <span className={st.done ? 'line-through text-gray-500' : ''}>
+                  {st.title}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
-
-      {/* Submit */}
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-      >
-        {form.id ? 'Save Changes' : 'Create Task'}
-      </button>
-    </form>
+      )}
+    </div>
   );
 }
+
+TaskDetail.propTypes = {
+  task: PropTypes.shape({
+    id:        PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    title:     PropTypes.string,
+    due_date:  PropTypes.string,
+    priority:  PropTypes.string,
+    type:      PropTypes.string,
+    subtasks:  PropTypes.arrayOf(
+      PropTypes.shape({
+        title: PropTypes.string,
+        done:  PropTypes.bool
+      })
+    ),
+  }),
+};

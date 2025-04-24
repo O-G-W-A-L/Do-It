@@ -1,42 +1,47 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useTasks.js
+import { useState, useEffect, useCallback } from 'react';
 import api from '../axiosInstance';
 
 export function useTasks() {
-  const [tasks, setTasks] = useState([]);
-  const [view, setView] = useState('all');
+  const [tasks, setTasks]       = useState([]);
+  const [view, setView]         = useState('all');
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]       = useState(null);
 
-  useEffect(() => {
+  // ─── Fetch ────────────────────────────────────────────────────────────────
+  const fetchTasks = useCallback(async () => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     console.log("[useTasks] Fetching tasks...");
-
-    api.get('/api/tasks/')
-      .then(res => {
-        if (!cancelled) {
-          console.log("[useTasks] Tasks fetched:", res.data);
-          setTasks(res.data);
-        }
-      })
-      .catch(err => {
-        if (!cancelled) {
-          const errMsg = err.message || 'Error fetching tasks';
-          console.error("[useTasks] Error fetching tasks:", errMsg);
-          setError(errMsg);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-          console.log("[useTasks] Done loading tasks.");
-        }
-      });
-
+    try {
+      const res = await api.get('/api/tasks/');
+      if (!cancelled) {
+        console.log("[useTasks] Tasks fetched:", res.data);
+        setTasks(res.data);
+      }
+    } catch (err) {
+      if (!cancelled) {
+        const msg = err.message || 'Error fetching tasks';
+        console.error("[useTasks] Error fetching tasks:", msg);
+        setError(msg);
+      }
+    } finally {
+      if (!cancelled) {
+        setLoading(false);
+        console.log("[useTasks] Done loading tasks.");
+      }
+    }
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // ─── Filtering by view ──────────────────────────────────────────────────
   const filteredTasks = tasks.filter(t => {
+    if (!t.due_date) return true;
     const due = new Date(t.due_date);
     const now = new Date();
     switch (view) {
@@ -54,95 +59,107 @@ export function useTasks() {
   });
 
   useEffect(() => {
-    console.log(`[useTasks] Current view: ${view}`);
-    console.log("[useTasks] Filtered tasks:", filteredTasks);
+    console.log(`[useTasks] Current view: ${view}`, filteredTasks);
   }, [view, tasks]);
 
-  const validateTaskData = (taskData) => {
-    const errors = [];
-    if (!taskData.title?.trim()) errors.push('Title is required');
-    if (!taskData.due_date) errors.push('Due date is required');
-    else {
-      const date = new Date(taskData.due_date);
-      if (isNaN(date.getTime())) errors.push('Invalid due date format');
-    }
-    return errors;
+  // ─── Validation ────────────────────────────────────────────────────────
+  const validate = data => {
+    const errs = [];
+    if (!data.title?.trim()) errs.push('Title is required');
+    if (!data.due_date) errs.push('Due date is required');
+    else if (isNaN(new Date(data.due_date).getTime())) errs.push('Invalid due date format');
+    return errs;
   };
 
-  const createTask = async (taskData) => {
+  // ─── Create ────────────────────────────────────────────────────────────
+  const createTask = async taskData => {
     console.log("[useTasks] Creating task:", taskData);
+    const errs = validate(taskData);
+    if (errs.length) throw new Error(errs.join(', '));
+
+    const payload = {
+      ...taskData,
+      title: taskData.title.trim(),
+      due_date: new Date(taskData.due_date).toISOString(),
+    };
+
     try {
-      const validationErrors = validateTaskData(taskData);
-      if (validationErrors.length > 0) {
-        console.warn("[useTasks] Validation errors:", validationErrors);
-        throw new Error(validationErrors.join(', '));
-      }
-
-      const formattedData = {
-        ...taskData,
-        title: taskData.title.trim(),
-        due_date: new Date(taskData.due_date).toISOString(),
-        description: taskData.description?.trim() || '',
-        priority: taskData.priority || 'Should Do',
-        type: taskData.type || 'Personal',
-        focus_block: !!taskData.focus_block,
-        project: taskData.project || null,
-        routine: taskData.routine || null,
-        goal: taskData.goal || null,
-      };
-
-      console.log("[useTasks] Formatted task for POST:", formattedData);
-
-      const response = await api.post('/api/tasks/', formattedData);
-      console.log("[useTasks] Task created successfully:", response.data);
-      setTasks(prev => [...prev, response.data]);
-      return response.data;
+      const res = await api.post('/tasks/', payload);
+      setTasks(prev => [...prev, res.data]);
+      return res.data;
     } catch (err) {
-      const errorMessage = err.response?.data || err.message;
-      console.error("[useTasks] Error creating task:", errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const msg = err.response?.data || err.message;
+      console.error("[useTasks] Error creating task:", msg);
+      setError(msg);
+      throw new Error(msg);
     }
   };
 
-  const updateTask = async (taskId, updatedData) => {
-    console.log(`[useTasks] Updating task ${taskId}:`, updatedData);
+  // ─── Update ────────────────────────────────────────────────────────────
+  const updateTask = async (id, taskData) => {
+    console.log(`[useTasks] Updating task ${id}:`, taskData);
+    const errs = validate(taskData);
+    if (errs.length) throw new Error(errs.join(', '));
+
+    const payload = {
+      ...taskData,
+      due_date: new Date(taskData.due_date).toISOString(),
+    };
+
     try {
-      const validationErrors = validateTaskData(updatedData);
-      if (validationErrors.length > 0) {
-        console.warn("[useTasks] Validation errors:", validationErrors);
-        throw new Error(validationErrors.join(', '));
-      }
-
-      const formattedData = {
-        ...updatedData,
-        due_date: new Date(updatedData.due_date).toISOString(),
-      };
-
-      const response = await api.put(`/api/tasks/${taskId}/`, formattedData);
-      console.log("[useTasks] Task updated successfully:", response.data);
-
-      setTasks(prev => prev.map(task =>
-        task.id === taskId ? { ...task, ...response.data } : task
-      ));
-
-      return response.data;
+      const res = await api.put(`/tasks/${id}/`, payload);
+      setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+      return res.data;
     } catch (err) {
-      const errorMessage = err.response?.data || err.message;
-      console.error(`[useTasks] Error updating task ${taskId}:`, errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const msg = err.response?.data || err.message;
+      console.error(`[useTasks] Error updating task ${id}:`, msg);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  // ─── Delete ────────────────────────────────────────────────────────────
+  const deleteTask = async id => {
+    console.log(`[useTasks] Deleting task ${id}`);
+    try {
+      await api.delete(`/tasks/${id}/`);
+      setTasks(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      const msg = err.response?.data || err.message;
+      console.error(`[useTasks] Error deleting task ${id}:`, msg);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  // ─── Toggle Complete ───────────────────────────────────────────────────
+  const toggleComplete = async id => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) throw new Error('Task not found');
+    console.log(`[useTasks] Toggling complete for ${id}`);
+    try {
+      const res = await api.patch(`/tasks/${id}/`, { is_done: !task.is_done });
+      setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data || err.message;
+      console.error(`[useTasks] Error toggling complete ${id}:`, msg);
+      setError(msg);
+      throw new Error(msg);
     }
   };
 
   return {
     tasks,
+    filteredTasks,
     view,
     setView,
-    filteredTasks,
     isLoading,
     error,
+    fetchTasks,
     createTask,
-    updateTask
+    updateTask,
+    deleteTask,
+    toggleComplete,
   };
 }

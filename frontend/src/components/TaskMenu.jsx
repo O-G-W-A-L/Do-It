@@ -6,16 +6,23 @@ import {
   FiBell,
   FiRepeat,
   FiCalendar,
-  FiClock as FiTimerIcon,
+  FiTrash2,
 } from 'react-icons/fi';
-import { useRoutines } from '../contexts/RoutineContext';
+import PropTypes from 'prop-types';
 
-export default function TaskMenu({ task }) {
+export default function TaskMenu({
+  task,
+  onEdit = () => {},
+  onSetTimer = () => {},
+  onSetAlarm = () => {},
+  onSetReminder = () => {},
+  onMakeRoutine = () => {},
+  onSpecificDate = () => {},
+  onDelete = () => {},
+}) {
   const [open, setOpen] = useState(false);
   const [action, setAction] = useState(null);
-  const { addRoutine } = useRoutines();
 
-  // Clears any open modal/state
   const closeAll = () => {
     setOpen(false);
     setAction(null);
@@ -25,50 +32,52 @@ export default function TaskMenu({ task }) {
     {
       label: 'Edit',
       icon: <FiEdit />,
-      onClick: () => {
-        // Trigger your inline edit or modal
-        console.log('Edit', task.id);
+      handler: () => {
+        onEdit(task.id);
         closeAll();
-      }
+      },
     },
     {
       label: 'Set Timer',
       icon: <FiClock />,
-      onClick: () => setAction('timer')
+      handler: () => setAction('timer'),
     },
     {
       label: 'Set Alarm',
       icon: <FiBell />,
-      onClick: () => setAction('alarm')
+      handler: () => setAction('alarm'),
     },
     {
       label: 'Set Reminder',
       icon: <FiCalendar />,
-      onClick: () => setAction('reminder')
+      handler: () => setAction('reminder'),
     },
     {
       label: 'Make Routine',
       icon: <FiRepeat />,
-      onClick: () => {
-        addRoutine({
-          id: task.id,
-          title: task.title,
-          time: '',
-          type: task.type || 'custom'
-        });
+      handler: () => {
+        onMakeRoutine(task.id);
         closeAll();
-      }
+      },
     },
     {
       label: 'Specific Date',
       icon: <FiCalendar />,
-      onClick: () => setAction('date')
-    }
+      handler: () => setAction('date'),
+    },
+    {
+      label: 'Delete',
+      icon: <FiTrash2 />,
+      handler: () => {
+        onDelete(task.id);
+        closeAll();
+      },
+    },
   ];
 
-  // VERY lightweight inline “modals” — replace with your own
   const renderModal = () => {
     if (!action) return null;
+
     let title, inputType, placeholder;
     switch (action) {
       case 'timer':
@@ -79,14 +88,17 @@ export default function TaskMenu({ task }) {
       case 'alarm':
         title = 'Set Alarm Time';
         inputType = 'time';
+        placeholder = '';
         break;
       case 'reminder':
         title = 'Set Reminder Date & Time';
         inputType = 'datetime-local';
+        placeholder = '';
         break;
       case 'date':
         title = 'Pick a Specific Date';
         inputType = 'date';
+        placeholder = '';
         break;
       default:
         return null;
@@ -95,7 +107,20 @@ export default function TaskMenu({ task }) {
     const handleSubmit = e => {
       e.preventDefault();
       const value = e.target.elements[0].value;
-      console.log(`${action} value for task ${task.id}:`, value);
+      switch (action) {
+        case 'timer':
+          onSetTimer(task.id, Number(value));
+          break;
+        case 'alarm':
+          onSetAlarm(task.id, value);
+          break;
+        case 'reminder':
+          onSetReminder(task.id, value);
+          break;
+        case 'date':
+          onSpecificDate(task.id, value);
+          break;
+      }
       closeAll();
     };
 
@@ -149,11 +174,11 @@ export default function TaskMenu({ task }) {
 
       {open && (
         <ul className="absolute right-0 mt-1 w-52 bg-white border rounded shadow-lg z-10">
-          {actions.map(({ label, icon, onClick }, i) => (
+          {actions.map(({ label, icon, handler }, idx) => (
             <li
-              key={i}
+              key={idx}
               className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer"
-              onClick={() => { onClick(); }}
+              onClick={handler}
             >
               {icon}
               <span>{label}</span>
@@ -166,3 +191,14 @@ export default function TaskMenu({ task }) {
     </div>
   );
 }
+
+TaskMenu.propTypes = {
+  task:           PropTypes.shape({ id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired }).isRequired,
+  onEdit:         PropTypes.func,
+  onSetTimer:     PropTypes.func,
+  onSetAlarm:     PropTypes.func,
+  onSetReminder:  PropTypes.func,
+  onMakeRoutine:  PropTypes.func,
+  onSpecificDate: PropTypes.func,
+  onDelete:       PropTypes.func,
+};

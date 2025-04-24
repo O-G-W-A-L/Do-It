@@ -1,21 +1,29 @@
 import React, { useState, useCallback } from 'react';
-import Sidebar      from '../components/Sidebar';
-import TopBar       from '../components/TopBar';
-import HomePage     from './HomePage';
-import MyTasks     from '../components/MyTasks';
-import CalendarView from '../components/CalendarView';
-import Priorities   from '../components/Priorities';
-import TaskDetail   from '../components/TaskDetail';
-import RoutineTracker from '../components/RoutineTracker';
-import { useTasks } from '../hooks/useTasks';
+import Sidebar         from '../components/Sidebar';
+import TopBar          from '../components/TopBar';
+import HomePage        from './HomePage';
+import MyTasks         from '../components/MyTasks';
+import CalendarView    from '../components/CalendarView';
+import Priorities      from '../components/Priorities';
+import TaskDetail      from '../components/TaskDetail';
+import RoutineTracker  from '../components/RoutineTracker';
+import { useTasks }    from '../hooks/useTasks';
 
 export default function Dashboard() {
   const [view, setView]              = useState('home');
   const [selectedTask, setSelected]  = useState(null);
   const [operationError, setOpError] = useState(null);
-  const { tasks, isLoading, error, createTask, updateTask } = useTasks();
 
-  // Unified create/update handler
+  const {
+    tasks,
+    isLoading,
+    error,
+    createTask,
+    updateTask,
+    deleteTask,
+    toggleComplete,
+  } = useTasks();
+
   const handleSave = useCallback(
     async (taskData) => {
       setOpError(null);
@@ -34,7 +42,6 @@ export default function Dashboard() {
     [selectedTask, createTask, updateTask]
   );
 
-  // Start a new task flow
   const startCreate = () => {
     setSelected({
       title:    '',
@@ -46,19 +53,16 @@ export default function Dashboard() {
     setOpError(null);
   };
 
-  // Edit existing
   const editTask = (task) => {
     setSelected(task);
     setView('edit');
     setOpError(null);
   };
 
-  // Decide what to render
   const renderMain = () => {
     if (isLoading) return <div>Loading…</div>;
     if (error)     return <div className="text-red-600">Error: {error}</div>;
 
-    // Task form
     if (view === 'create' || view === 'edit') {
       return (
         <>
@@ -67,30 +71,48 @@ export default function Dashboard() {
               {operationError}
             </div>
           )}
-          <TaskDetail task={selectedTask} onSave={handleSave} />
+          <TaskDetail
+            task={selectedTask}
+            onSave={handleSave}
+            onSpecificDate={() => {}} // ✅ Added to fix prop warning
+          />
         </>
       );
     }
 
-    // List & other panels
     switch (view) {
       case 'home':
         return (
           <HomePage
+            tasks={tasks}
             onAddTask={createTask}
             onSelectTask={editTask}
+            onDeleteTask={deleteTask}
+            onToggleComplete={toggleComplete}
           />
         );
+
       case 'mytasks':
         return (
           <MyTasks
             tasks={tasks}
             onAddTask={createTask}
             onSelectTask={editTask}
+            onDeleteTask={deleteTask}
+            onToggleComplete={toggleComplete}
           />
         );
+
       case 'priorities':
-        return <Priorities tasks={tasks} onSelectTask={editTask} />;
+        return (
+          <Priorities
+            tasks={tasks}
+            onSelectTask={editTask}
+            onDeleteTask={deleteTask}
+            onToggleComplete={toggleComplete}
+          />
+        );
+
       case 'calendar':
         return (
           <CalendarView
@@ -111,10 +133,14 @@ export default function Dashboard() {
                 setOpError(err.message);
               }
             }}
+            onDeleteEvent={deleteTask}
+            onToggleComplete={toggleComplete}
           />
         );
+
       case 'routine':
         return <RoutineTracker />;
+
       default:
         return <div>Select a view or create a new task</div>;
     }
@@ -137,8 +163,8 @@ export default function Dashboard() {
             view === 'create'
               ? 'New Task'
               : view === 'edit'
-              ? 'Edit Task'
-              : view.charAt(0).toUpperCase() + view.slice(1)
+                ? 'Edit Task'
+                : view.charAt(0).toUpperCase() + view.slice(1)
           }
         />
         <main className="p-6 overflow-auto">{renderMain()}</main>

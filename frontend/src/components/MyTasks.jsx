@@ -4,17 +4,22 @@ import { FiPlusCircle } from 'react-icons/fi';
 import TaskCard from './TaskCard';
 
 export default function MyTasks({
-  tasks = [],
-  onAddTask = () => {},
-  onSelectTask = () => {},
+  tasks,
+  onAddTask,
+  onSelectTask,
+  onEdit,
+  onDelete,
+  onToggleComplete,
+  onSetTimer,
+  onSetAlarm,
+  onSetReminder,
+  onMakeRoutine,
+  onSpecificDate,
 }) {
+  const [isAddOpen, setAddOpen] = useState(false);
   const [newTask, setNewTask] = useState({
-    title: '',
-    due_date: '',
-    priority: 'Should Do',
-    type: 'Personal',
+    title: '', due_date: '', priority: 'Should Do', type: 'Personal'
   });
-  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -23,28 +28,26 @@ export default function MyTasks({
 
   const handleAdd = () => {
     if (!newTask.title.trim()) return;
-    onAddTask({ ...newTask });
+    onAddTask(newTask);
     setNewTask({ title: '', due_date: '', priority: 'Should Do', type: 'Personal' });
-    setIsAddOpen(false);
+    setAddOpen(false);
   };
 
   return (
     <div className="space-y-6">
-      {/* Add‑Task Panel */}
+      {/* ─ Add Task Panel ───────────────────────────────────────────────── */}
       <div className="p-4 bg-white rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">
             {isAddOpen ? 'Add New Task' : 'Quick Add'}
           </h3>
           <button
-            type="button"
-            onClick={() => setIsAddOpen(o => !o)}
+            onClick={() => setAddOpen(o => !o)}
             className="text-blue-500 hover:text-blue-700 focus:outline-none"
           >
             {isAddOpen
               ? 'Hide'
-              : <span className="flex items-center gap-1"><FiPlusCircle /> Add Task</span>
-            }
+              : <span className="flex items-center gap-1"><FiPlusCircle /> Add Task</span>}
           </button>
         </div>
 
@@ -72,10 +75,9 @@ export default function MyTasks({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="Must Do">Must Do</option>
-              <option value="Should Do">Should Do</option>
-              <option value="Could Do">Could Do</option>
-              <option value="Might Do">Might Do</option>
+              {['Must Do','Should Do','Could Do','Might Do'].map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
             <select
               name="type"
@@ -83,20 +85,18 @@ export default function MyTasks({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="Personal">Personal</option>
-              <option value="Work">Work</option>
-              <option value="Routine">Routine</option>
+              {['Personal','Work','Routine'].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
             <div className="flex justify-end gap-2">
               <button
-                type="button"
-                onClick={() => setIsAddOpen(false)}
+                onClick={() => setAddOpen(false)}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none"
               >
                 Cancel
               </button>
               <button
-                type="button"
                 onClick={handleAdd}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none"
               >
@@ -107,7 +107,7 @@ export default function MyTasks({
         )}
       </div>
 
-      {/* Task List */}
+      {/* ─ Task List ────────────────────────────────────────────────────── */}
       {tasks.length === 0 ? (
         <div className="text-gray-400 p-4">No tasks found.</div>
       ) : (
@@ -116,7 +116,15 @@ export default function MyTasks({
             <TaskCard
               key={task.id}
               task={task}
-              onClick={() => onSelectTask(task)}
+              onClick={onSelectTask}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleComplete={onToggleComplete}
+              onSetTimer={onSetTimer}
+              onSetAlarm={onSetAlarm}
+              onSetReminder={onSetReminder}
+              onMakeRoutine={onMakeRoutine}
+              onSpecificDate={onSpecificDate}
             />
           ))}
         </ul>
@@ -126,13 +134,15 @@ export default function MyTasks({
 }
 
 MyTasks.propTypes = {
-  tasks: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
-    title: PropTypes.string.isRequired,
-    due_date: PropTypes.string,
-    priority: PropTypes.string,
-    type: PropTypes.string,
-  })),
-  onAddTask: PropTypes.func,
-  onSelectTask: PropTypes.func,
+  tasks:            PropTypes.array.isRequired,
+  onAddTask:        PropTypes.func.isRequired,
+  onSelectTask:     PropTypes.func.isRequired,
+  onEdit:           PropTypes.func.isRequired,
+  onDelete:         PropTypes.func.isRequired,
+  onToggleComplete: PropTypes.func.isRequired,
+  onSetTimer:       PropTypes.func.isRequired,
+  onSetAlarm:       PropTypes.func.isRequired,
+  onSetReminder:    PropTypes.func.isRequired,
+  onMakeRoutine:    PropTypes.func.isRequired,
+  onSpecificDate:   PropTypes.func.isRequired,
 };
