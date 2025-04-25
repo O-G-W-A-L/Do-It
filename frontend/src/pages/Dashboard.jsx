@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 import React, { useState, useCallback } from 'react';
 import Sidebar         from '../components/Sidebar';
 import TopBar          from '../components/TopBar';
@@ -98,8 +99,14 @@ export default function Dashboard() {
             tasks={tasks}
             onAddTask={createTask}
             onSelectTask={editTask}
-            onDeleteTask={deleteTask}
+            onEdit={editTask}                 // ← added this line
+            onDelete={deleteTask}
             onToggleComplete={toggleComplete}
+            onSetTimer={updateTask}
+            onSetAlarm={updateTask}
+            onSetReminder={updateTask}
+            onMakeRoutine={updateTask}
+            onSpecificDate={updateTask}
           />
         );
 
