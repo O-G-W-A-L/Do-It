@@ -8,7 +8,9 @@ import CalendarView    from '../components/CalendarView';
 import Priorities      from '../components/Priorities';
 import TaskDetail      from '../components/TaskDetail';
 import RoutineTracker  from '../components/RoutineTracker';
+import MyProgress      from '../components/MyProgress';          // ← added
 import { useTasks }    from '../hooks/useTasks';
+import { useRoutines } from '../contexts/RoutineContext';        // ← added
 
 export default function Dashboard() {
   const [view, setView]              = useState('home');
@@ -24,6 +26,8 @@ export default function Dashboard() {
     deleteTask,
     toggleComplete,
   } = useTasks();
+
+  const { routines } = useRoutines();                           // ← added
 
   const handleSave = useCallback(
     async (taskData) => {
@@ -99,7 +103,7 @@ export default function Dashboard() {
             tasks={tasks}
             onAddTask={createTask}
             onSelectTask={editTask}
-            onEdit={editTask}                 // ← added this line
+            onEdit={editTask}
             onDelete={deleteTask}
             onToggleComplete={toggleComplete}
             onSetTimer={updateTask}
@@ -147,6 +151,14 @@ export default function Dashboard() {
 
       case 'routine':
         return <RoutineTracker />;
+
+      case 'progress':                                          // ← added
+        return (
+          <MyProgress 
+            tasks={tasks} 
+            routines={routines} 
+          />
+        );
 
       default:
         return <div>Select a view or create a new task</div>;
