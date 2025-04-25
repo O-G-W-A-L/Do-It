@@ -1,3 +1,5 @@
+# api/serializers.py
+
 import uuid
 from datetime import timedelta
 from django.utils import timezone
@@ -169,14 +171,15 @@ class UserSerializer(serializers.ModelSerializer):
 # ─── TASK & RELATED SERIALIZERS ─────────────────────────────────────────────────
 
 class TaskSerializer(serializers.ModelSerializer):
-    # Automatically set user to request.user, no override needed
+    # Automatically set user to request.user
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model            = Task
         fields           = (
             'id', 'user', 'title', 'description',
-            'due_date', 'priority', 'routine', 'goal',
+            'due_date', 'type',         # ← added `type` here
+            'priority', 'routine', 'goal',
             'focus_block', 'is_done',
             'created_at', 'updated_at',
         )

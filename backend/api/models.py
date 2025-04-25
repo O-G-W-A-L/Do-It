@@ -8,7 +8,7 @@ from django.utils import timezone
 
 def default_expiry():
     """
-    Return a timezone‑aware datetime 24 hours from now.
+    Return a timezone-aware datetime 24 hours from now.
     Named function so Django migrations can serialize it.
     """
     return timezone.now() + timedelta(hours=24)
@@ -66,11 +66,21 @@ class Task(models.Model):
         ('Could Do',  'Could Do'),
         ('Might Do',  'Might Do'),
     ]
+    TYPE_CHOICES = [
+        ('Personal', 'Personal'),
+        ('Work',     'Work'),
+        ('Routine',  'Routine'),
+        ('Fitness',  'Fitness'),
+    ]
 
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
     title       = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     due_date    = models.DateTimeField()
+
+    # ← NEW field: category/type for your front-end badges
+    type        = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Personal')
+
     project     = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
     routine     = models.ForeignKey(Routine, on_delete=models.SET_NULL, null=True, blank=True)
     goal        = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True)
