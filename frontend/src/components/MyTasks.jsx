@@ -1,5 +1,5 @@
 // src/components/MyTasks.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';    // ← added useMemo
 import PropTypes from 'prop-types';
 import { FiPlusCircle } from 'react-icons/fi';
 import TaskCard from './TaskCard';
@@ -21,6 +21,16 @@ export default function MyTasks({
   const [newTask, setNewTask] = useState({
     title: '', due_date: '', priority: 'Should Do', type: 'Personal'
   });
+
+  // ── Group tasks by their `type` field ──────────────────────────────────
+  const groupedByType = useMemo(() => {
+    return tasks.reduce((acc, t) => {
+      const category = t.type || 'Uncategorized';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(t);
+      return acc;
+    }, {});
+  }, [tasks]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -108,27 +118,32 @@ export default function MyTasks({
         )}
       </div>
 
-      {/* ─ Task List ────────────────────────────────────────────────────── */}
+      {/* ── Grouped Task List by Type ─────────────────────────────────────── */}
       {tasks.length === 0 ? (
         <div className="text-gray-400 p-4">No tasks found.</div>
       ) : (
-        <ul className="space-y-4">
-          {tasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onClick={onSelectTask}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleComplete={onToggleComplete}
-              onSetTimer={onSetTimer}
-              onSetAlarm={onSetAlarm}
-              onSetReminder={onSetReminder}
-              onMakeRoutine={onMakeRoutine}
-              onSpecificDate={onSpecificDate}
-            />
-          ))}
-        </ul>
+        Object.entries(groupedByType).map(([category, items]) => (
+          <div key={category} className="space-y-2">
+            <h3 className="text-lg font-semibold">{category}</h3>
+            <ul className="space-y-4">
+              {items.map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={onSelectTask}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onToggleComplete={onToggleComplete}
+                  onSetTimer={onSetTimer}
+                  onSetAlarm={onSetAlarm}
+                  onSetReminder={onSetReminder}
+                  onMakeRoutine={onMakeRoutine}
+                  onSpecificDate={onSpecificDate}
+                />
+              ))}
+            </ul>
+          </div>
+        ))
       )}
     </div>
   );
