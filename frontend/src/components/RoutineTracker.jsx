@@ -1,10 +1,12 @@
+// src/components/RoutineTracker.jsx
 import React, { useState } from 'react';
 import {
   FiPlusCircle, FiX, FiEdit, FiTrash, FiCheckSquare
 } from 'react-icons/fi';
 import { useRoutines } from '../contexts/RoutineContext';
 
-const RoutineTypes = [
+// ← Exported so CalendarView can import it
+export const RoutineTypes = [
   { label: 'Personal', value: 'personal', color: 'bg-blue-100 text-blue-700' },
   { label: 'Work',     value: 'work',     color: 'bg-green-100 text-green-700' },
   { label: 'Fitness',  value: 'fitness',  color: 'bg-red-100 text-red-700' },
@@ -162,5 +164,5 @@ export default function RoutineTracker() {
         </div>
       )}
     </div>
-  );
+);
 }
