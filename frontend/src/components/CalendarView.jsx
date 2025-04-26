@@ -1,90 +1,84 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin   from '@fullcalendar/daygrid';
-import timeGridPlugin  from '@fullcalendar/timegrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { RoutineTypes } from './RoutineTracker';
 
-// Map routine types to actual background‐color hex codes
-const TYPE_BG_HEX = {
-  personal: '#ebf8ff',
-  work:     '#f0fff4',
-  routine:  '#faf5ff',
-  fitness:  '#fff5f5',
-};
+export default function CalendarView({ tasks, onEventDrop, onDateCreate }) {
+  const [events, setEvents] = useState([]);
 
-export default function CalendarView({
-  tasks,
-  routines = [],
-  onEventDrop,
-  onDateCreate,
-}) {
-  // Track the current visible date range
-  const [viewRange, setViewRange] = useState({ startStr: '', endStr: '' });
+  useEffect(() => {
+    const allEvents = [];
 
-  // Build events only when tasks, routines, or viewRange change
-  const events = useMemo(() => {
-    const todayDate = new Date().toISOString().split('T')[0];
+    tasks.forEach(task => {
+      const baseColor = task.priority === 'high' ? '#e53e3e' : '#3182ce';
 
-    // 1) One-off tasks
-    const taskEvents = tasks.map(t => ({
-      id:    String(t.id),
-      title: t.title,
-      start: t.due_date,
-      color: t.priority === 'Must Do' ? '#e53e3e' : '#3182ce',
-    }));
+      // Due date event
+      if (task.due_date) {
+        allEvents.push({
+          id:    `${task.id}-due`,
+          title: task.title,
+          start: task.due_date,
+          color: baseColor,
+        });
+      }
 
-    // 2) Label each routine once on "today"
-    const routineLabels = routines.map(r => ({
-      id:      `routine-label-${r.id}`,
-      title:   r.title,
-      start:   todayDate,
-      allDay:  true,
-      color:   '#2d3748', // dark text for contrast
-    }));
+      // Specific date override
+      if (task.specific_due_date) {
+        allEvents.push({
+          id:    `${task.id}-specific`,
+          title: `${task.title} (Specific)`,
+          start: task.specific_due_date,
+          color: '#805ad5',
+        });
+      }
 
-    // 3) Background span across the visible range
-    const routineBackgrounds = (viewRange.startStr && viewRange.endStr)
-      ? routines.map(r => ({
-          id:           `routine-bg-${r.id}`,
-          start:        viewRange.startStr,
-          end:          viewRange.endStr,
-          rendering:    'background',
-          allDay:       true,
-          backgroundColor: TYPE_BG_HEX[r.type.toLowerCase()] || '#edf2f7',
-        }))
-      : [];
+      // Reminder
+      if (task.reminder_datetime) {
+        allEvents.push({
+          id:    `${task.id}-reminder`,
+          title: `${task.title} (Reminder)`,
+          start: task.reminder_datetime,
+          color: '#38a169',
+        });
+      }
 
-    return [...taskEvents, ...routineLabels, ...routineBackgrounds];
-  }, [tasks, routines, viewRange.startStr, viewRange.endStr]);
+      // Alarm as time-only event
+      if (task.alarm_time) {
+        const today = new Date();
+        const [h, m] = task.alarm_time.split(':');
+        const alarmDate = new Date(today);
+        alarmDate.setHours(+h, +m, 0, 0);
+
+        allEvents.push({
+          id:    `${task.id}-alarm`,
+          title: `${task.title} (Alarm)`,
+          start: alarmDate.toISOString(),
+          color: '#f6ad55',
+        });
+      }
+    });
+
+    setEvents(allEvents);
+  }, [tasks]);
 
   return (
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
       initialView="dayGridMonth"
       headerToolbar={{
-        left:  'prev,next today',
-        center:'title',
+        left: 'prev,next today',
+        center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay',
       }}
       events={events}
       editable
-      // Update viewRange when calendar navigates
-      datesSet={dateInfo => {
-        setViewRange({
-          startStr: dateInfo.startStr,
-          endStr:   dateInfo.endStr,
-        });
-      }}
       dateClick={info => {
         const title = prompt('New task title:');
         if (title) onDateCreate({ title, due_date: info.dateStr });
       }}
       eventDrop={info => {
-        // Only drop task events, not routine backgrounds/labels
-        if (!info.event.id.startsWith('routine-')) {
-          onEventDrop(info.event.id, { due_date: info.event.startStr });
-        }
+        onEventDrop(info.event.id.split('-')[0], { due_date: info.event.startStr });
       }}
       height="auto"
     />
