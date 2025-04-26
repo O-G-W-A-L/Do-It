@@ -13,7 +13,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     EmailVerification,
     Task, Project, Routine, Goal,
-    FileAttachment, Notification
+    FileAttachment, Notification, Subtask,
 )
 
 # ─── REGISTRATION & EMAIL VERIFICATION ─────────────────────────────────────────
@@ -168,22 +168,46 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email')
 
 
-# ─── TASK & RELATED SERIALIZERS ─────────────────────────────────────────────────
+# ─── SUBTASK SERIALIZER ─────────────────────────────────────────────────────
+class SubtaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Subtask
+        fields = ('id', 'title', 'is_done')
 
+
+# ─── TASK & RELATED SERIALIZERS ────────────────────────────────────────────
 class TaskSerializer(serializers.ModelSerializer):
     # Automatically set user to request.user
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user     = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    subtasks = SubtaskSerializer(many=True, required=False)  # ← nested
 
     class Meta:
         model            = Task
         fields           = (
             'id', 'user', 'title', 'description',
-            'due_date', 'type',         # ← added `type` here
+            'due_date', 'type',
             'priority', 'routine', 'goal',
             'focus_block', 'is_done',
+            'subtasks',  # ← include subtasks
             'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        subtasks_data = validated_data.pop('subtasks', [])
+        task = super().create(validated_data)
+        for st in subtasks_data:
+            Subtask.objects.create(task=task, **st)
+        return task
+
+    def update(self, instance, validated_data):
+        subtasks_data = validated_data.pop('subtasks', None)
+        task = super().update(instance, validated_data)
+        if subtasks_data is not None:
+            instance.subtasks.all().delete()
+            for st in subtasks_data:
+                Subtask.objects.create(task=task, **st)
+        return task
 
 
 class ProjectSerializer(serializers.ModelSerializer):
