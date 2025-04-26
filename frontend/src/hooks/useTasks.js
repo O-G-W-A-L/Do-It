@@ -1,4 +1,3 @@
-// src/hooks/useTasks.js
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../axiosInstance';
 
@@ -8,7 +7,7 @@ export function useTasks() {
   const [isLoading, setLoading] = useState(true);
   const [error, setError]       = useState(null);
 
-  // Fetch
+  // ─── Fetch Tasks ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -31,12 +30,10 @@ export function useTasks() {
         }
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // Filtering by view (memoized)
+  // ─── Filtered Tasks ───────────────────────────────────────────────────
   const filteredTasks = useMemo(() => {
     const now = new Date();
     return tasks.filter(t => {
@@ -57,7 +54,7 @@ export function useTasks() {
     });
   }, [tasks, view]);
 
-  // Validation
+  // ─── Validation ──────────────────────────────────────────────────────
   const validate = useCallback(data => {
     const errs = [];
     if (!data.title?.trim()) errs.push('Title is required');
@@ -67,15 +64,16 @@ export function useTasks() {
     return errs;
   }, []);
 
-  // Create
+  // ─── Create Task ──────────────────────────────────────────────────────
   const createTask = useCallback(async taskData => {
     const errs = validate(taskData);
     if (errs.length) throw new Error(errs.join(', '));
 
     const payload = {
       ...taskData,
-      title:    taskData.title.trim(),
-      due_date: new Date(taskData.due_date).toISOString(),
+      title:     taskData.title.trim(),
+      due_date:  new Date(taskData.due_date).toISOString(),
+      subtasks:  taskData.subtasks || [],
     };
 
     const res = await api.post('/api/tasks/', payload);
@@ -83,7 +81,7 @@ export function useTasks() {
     return res.data;
   }, [validate]);
 
-  // ─── Update ────────────────────────────────────────────────────────────
+  // ─── Update Entire Task ───────────────────────────────────────────────
   const updateTask = useCallback(async (id, taskData) => {
     const errs = validate(taskData);
     if (errs.length) throw new Error(errs.join(', '));
@@ -91,6 +89,7 @@ export function useTasks() {
     const payload = {
       ...taskData,
       due_date: new Date(taskData.due_date).toISOString(),
+      subtasks: taskData.subtasks || [],
     };
 
     const res = await api.put(`/api/tasks/${id}/`, payload);
@@ -98,13 +97,13 @@ export function useTasks() {
     return res.data;
   }, [validate]);
 
-  // ─── Delete ────────────────────────────────────────────────────────────
+  // ─── Delete Task ──────────────────────────────────────────────────────
   const deleteTask = useCallback(async id => {
     await api.delete(`/api/tasks/${id}/`);
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  // ─── Toggle Complete ───────────────────────────────────────────────────
+  // ─── Toggle Task Complete ─────────────────────────────────────────────
   const toggleComplete = useCallback(async id => {
     const task = tasks.find(t => t.id === id);
     if (!task) throw new Error('Task not found');
@@ -112,6 +111,19 @@ export function useTasks() {
     const res = await api.patch(`/api/tasks/${id}/`, {
       is_done: !task.is_done
     });
+    setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+    return res.data;
+  }, [tasks]);
+
+  // ─── Update Only Subtasks ─────────────────────────────────────────────
+  const updateTaskSubtasks = useCallback(async (id, newSubtasks) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) throw new Error('Task not found');
+
+    const res = await api.patch(`/api/tasks/${id}/`, {
+      subtasks: newSubtasks
+    });
+
     setTasks(prev => prev.map(t => t.id === id ? res.data : t));
     return res.data;
   }, [tasks]);
@@ -127,5 +139,6 @@ export function useTasks() {
     updateTask,
     deleteTask,
     toggleComplete,
+    updateTaskSubtasks, // 👈 make sure you export it!
   };
 }

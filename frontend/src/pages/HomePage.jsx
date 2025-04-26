@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { FiPlusCircle } from 'react-icons/fi';
 import TaskCard from '../components/TaskCard';
-import { useRoutines } from '../contexts/RoutineContext';
 
 export default function HomePage({
   tasks,
@@ -11,72 +10,60 @@ export default function HomePage({
   onToggleComplete,
 }) {
   const [isAddOpen, setAddOpen] = useState(false);
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask]   = useState({
     title: '', due_date: '', priority: 'Should Do', type: 'Personal'
   });
 
-  const { routines } = useRoutines();
-
   const today = useMemo(() => new Date(), []);
 
-  // Filter only tasks due today
-  const todaysTasks = useMemo(() =>
-    tasks.filter(t => {
-      if (!t.due_date) return false;
-      const d = new Date(t.due_date);
-      return (
-        d.getFullYear() === today.getFullYear() &&
-        d.getMonth() === today.getMonth() &&
-        d.getDate() === today.getDate()
-      );
-    }),
+  // 1) Filter only one-time tasks due today
+  const todaysTasks = useMemo(
+    () =>
+      tasks.filter(t => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return (
+          d.getFullYear() === today.getFullYear() &&
+          d.getMonth()    === today.getMonth() &&
+          d.getDate()     === today.getDate()
+        );
+      }),
     [tasks, today]
   );
 
-  // Convert routines into pseudo-tasks and assign type "Routine"
-  const routineTasks = useMemo(() =>
-    routines.map(r => ({
-      id:       `routine-${r.id}`,
-      title:    r.title,
-      due_date: today.toISOString().split('T')[0],
-      type:     'Routine',
-      is_done:  r.completed,
-    })),
-    [routines, today]
-  );
-
-  const combined = useMemo(() => [...todaysTasks, ...routineTasks], [todaysTasks, routineTasks]);
-
+  // 2) Compute progress
   const todayProgress = useMemo(() => {
-    const total = combined.length;
-    const done = combined.filter(t => t.is_done).length;
-    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
-  }, [combined]);
+    const total = todaysTasks.length;
+    const done  = todaysTasks.filter(t => t.is_done).length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, pct };
+  }, [todaysTasks]);
 
+  // 3) Group by category/type
   const groupedByType = useMemo(() => {
-    return combined.reduce((acc, t) => {
-      const category = t.type || 'Uncategorized';
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(t);
+    return todaysTasks.reduce((acc, t) => {
+      const cat = t.type || 'Uncategorized';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(t);
       return acc;
     }, {});
-  }, [combined]);
+  }, [todaysTasks]);
 
+  // Quick-add handlers
   const handleChange = e => {
     const { name, value } = e.target;
     setNewTask(prev => ({ ...prev, [name]: value }));
   };
-
   const handleAdd = () => {
     if (!newTask.title.trim()) return;
     onAddTask(newTask);
-    setNewTask({ title: '', due_date: '', priority: 'Should Do', type: 'Personal' });
+    setNewTask({ title:'', due_date:'', priority:'Should Do', type:'Personal' });
     setAddOpen(false);
   };
 
   return (
     <div className="space-y-8">
-      {/* Quick Add Section */}
+      {/* Quick Add Panel */}
       <section className="p-4 bg-white rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">
@@ -93,33 +80,43 @@ export default function HomePage({
         </div>
         {isAddOpen && (
           <div className="space-y-3">
-            <input type="text" name="title" placeholder="Task title"
+            <input
+              type="text" name="title" placeholder="Task title"
               value={newTask.title} onChange={handleChange}
-              className="w-full p-2 border rounded" required />
-            <input type="date" name="due_date"
+              className="w-full p-2 border rounded" required
+            />
+            <input
+              type="date" name="due_date"
               value={newTask.due_date} onChange={handleChange}
-              className="w-full p-2 border rounded" />
-            <select name="priority" value={newTask.priority}
-              onChange={handleChange}
-              className="w-full p-2 border rounded">
+              className="w-full p-2 border rounded"
+            />
+            <select
+              name="priority" value={newTask.priority} onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
               {['Must Do','Should Do','Could Do','Might Do'].map(p => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
-            <select name="type" value={newTask.type}
-              onChange={handleChange}
-              className="w-full p-2 border rounded">
-              {['Personal','Work','Routine'].map(t => (
+            <select
+              name="type" value={newTask.type} onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              {['Personal','Work','Routine','Fitness'].map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setAddOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+              <button
+                onClick={() => setAddOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
                 Cancel
               </button>
-              <button onClick={handleAdd}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              <button
+                onClick={handleAdd}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
                 Add Task
               </button>
             </div>
@@ -127,7 +124,7 @@ export default function HomePage({
         )}
       </section>
 
-      {/* Task Sections */}
+      {/* Today's Tasks */}
       <section className="space-y-6">
         <h3 className="text-xl font-semibold">Today's Tasks</h3>
         {todayProgress.total === 0 ? (
@@ -142,7 +139,7 @@ export default function HomePage({
                     key={task.id}
                     task={task}
                     onClick={onSelectTask}
-                    onToggleComplete={onToggleComplete}
+                    onToggleComplete={() => onToggleComplete(task.id)}
                   />
                 ))}
               </ul>
@@ -151,7 +148,7 @@ export default function HomePage({
         )}
       </section>
 
-      {/* Progress */}
+      {/* Progress Bar */}
       {todayProgress.total > 0 && (
         <section className="bg-white p-6 rounded shadow">
           <h3 className="text-xl font-semibold mb-4">Today's Progress</h3>

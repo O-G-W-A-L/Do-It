@@ -1,4 +1,3 @@
-// src/pages/Dashboard.jsx
 import React, { useState, useCallback } from 'react';
 import Sidebar         from '../components/Sidebar';
 import TopBar          from '../components/TopBar';
@@ -17,7 +16,7 @@ export default function Dashboard() {
   const [selectedTask, setSelected]  = useState(null);
   const [operationError, setOpError] = useState(null);
 
-  // Task CRUD hooks
+  // Task CRUD
   const {
     tasks,
     isLoading,
@@ -28,23 +27,21 @@ export default function Dashboard() {
     toggleComplete,
   } = useTasks();
 
-  // Routine management hook
-  const { routines, addRoutine } = useRoutines();
+  // Routine
+  const { routines, addRoutine, toggleRoutine } = useRoutines();  // ← grab toggleRoutine
 
-  // Wrapper to convert a task into a routine
+  // Wrap a task → routine creation
   const handleMakeRoutine = useCallback(id => {
     const task = tasks.find(t => t.id === id);
-    if (!task) throw new Error('Task not found');
-
-    // Map the Task fields to your Routine shape
+    if (!task) throw new Error(`Task ${id} not found`);
     addRoutine({
       title: task.title,
-      time:  task.time || '',             // if your Task model has a time field
-      type:  task.type.toLowerCase(),     // match your RoutineTracker values
+      time:  task.time || '',
+      type:  task.type.toLowerCase(),
     });
   }, [tasks, addRoutine]);
 
-  // Save (create or update) from TaskDetail
+  // Save handler for TaskDetail
   const handleSave = useCallback(
     async taskData => {
       setOpError(null);
@@ -110,6 +107,7 @@ export default function Dashboard() {
             onSelectTask={editTask}
             onToggleComplete={toggleComplete}
             onMakeRoutine={handleMakeRoutine}
+            onToggleRoutine={toggleRoutine}    // ← pass down
           />
         );
 
@@ -122,10 +120,11 @@ export default function Dashboard() {
             onEdit={editTask}
             onDelete={deleteTask}
             onToggleComplete={toggleComplete}
+            onMakeRoutine={handleMakeRoutine}
+            onToggleRoutine={toggleRoutine}    // ← pass down
             onSetTimer={updateTask}
             onSetAlarm={updateTask}
             onSetReminder={updateTask}
-            onMakeRoutine={handleMakeRoutine}
             onSpecificDate={updateTask}
           />
         );
