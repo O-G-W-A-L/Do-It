@@ -8,15 +8,16 @@ import CalendarView    from '../components/CalendarView';
 import Priorities      from '../components/Priorities';
 import TaskDetail      from '../components/TaskDetail';
 import RoutineTracker  from '../components/RoutineTracker';
-import MyProgress      from '../components/MyProgress';          // ← added
+import MyProgress      from '../components/MyProgress';
 import { useTasks }    from '../hooks/useTasks';
-import { useRoutines } from '../contexts/RoutineContext';        // ← added
+import { useRoutines } from '../contexts/RoutineContext';
 
 export default function Dashboard() {
   const [view, setView]              = useState('home');
   const [selectedTask, setSelected]  = useState(null);
   const [operationError, setOpError] = useState(null);
 
+  // Task CRUD hooks
   const {
     tasks,
     isLoading,
@@ -27,10 +28,25 @@ export default function Dashboard() {
     toggleComplete,
   } = useTasks();
 
-  const { routines } = useRoutines();                           // ← added
+  // Routine management hook
+  const { routines, addRoutine } = useRoutines();
 
+  // Wrapper to convert a task into a routine
+  const handleMakeRoutine = useCallback(id => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) throw new Error('Task not found');
+
+    // Map the Task fields to your Routine shape
+    addRoutine({
+      title: task.title,
+      time:  task.time || '',             // if your Task model has a time field
+      type:  task.type.toLowerCase(),     // match your RoutineTracker values
+    });
+  }, [tasks, addRoutine]);
+
+  // Save (create or update) from TaskDetail
   const handleSave = useCallback(
-    async (taskData) => {
+    async taskData => {
       setOpError(null);
       try {
         if (selectedTask?.id) {
@@ -58,7 +74,7 @@ export default function Dashboard() {
     setOpError(null);
   };
 
-  const editTask = (task) => {
+  const editTask = task => {
     setSelected(task);
     setView('edit');
     setOpError(null);
@@ -79,7 +95,7 @@ export default function Dashboard() {
           <TaskDetail
             task={selectedTask}
             onSave={handleSave}
-            onSpecificDate={() => {}} // ✅ Added to fix prop warning
+            onSpecificDate={() => {}}
           />
         </>
       );
@@ -92,8 +108,8 @@ export default function Dashboard() {
             tasks={tasks}
             onAddTask={createTask}
             onSelectTask={editTask}
-            onDeleteTask={deleteTask}
             onToggleComplete={toggleComplete}
+            onMakeRoutine={handleMakeRoutine}
           />
         );
 
@@ -109,7 +125,7 @@ export default function Dashboard() {
             onSetTimer={updateTask}
             onSetAlarm={updateTask}
             onSetReminder={updateTask}
-            onMakeRoutine={updateTask}
+            onMakeRoutine={handleMakeRoutine}
             onSpecificDate={updateTask}
           />
         );
@@ -128,6 +144,7 @@ export default function Dashboard() {
         return (
           <CalendarView
             tasks={tasks}
+            routines={routines}
             onDateCreate={({ dateStr }) => {
               setSelected({
                 title:    '',
@@ -152,13 +169,8 @@ export default function Dashboard() {
       case 'routine':
         return <RoutineTracker />;
 
-      case 'progress':                                          // ← added
-        return (
-          <MyProgress 
-            tasks={tasks} 
-            routines={routines} 
-          />
-        );
+      case 'progress':
+        return <MyProgress tasks={tasks} routines={routines} />;
 
       default:
         return <div>Select a view or create a new task</div>;
@@ -169,7 +181,7 @@ export default function Dashboard() {
     <div className="flex h-screen">
       <Sidebar
         currentView={view}
-        onViewChange={(v) => {
+        onViewChange={v => {
           setView(v);
           setSelected(null);
           setOpError(null);
