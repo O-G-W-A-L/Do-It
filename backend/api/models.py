@@ -1,5 +1,3 @@
-# api/models.py
-
 import uuid
 from datetime import timedelta
 from django.db import models
@@ -8,7 +6,7 @@ from django.utils import timezone
 
 def default_expiry():
     """
-    Return a timezone-aware datetime 24 hours from now.
+    Return a timezone‐aware datetime 24 hours from now.
     Named function so Django migrations can serialize it.
     """
     return timezone.now() + timedelta(hours=24)
@@ -77,10 +75,7 @@ class Task(models.Model):
     title       = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     due_date    = models.DateTimeField()
-
-    # ← NEW field: category/type for your front-end badges
     type        = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Personal')
-
     project     = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
     routine     = models.ForeignKey(Routine, on_delete=models.SET_NULL, null=True, blank=True)
     goal        = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True)
@@ -105,3 +100,15 @@ class Notification(models.Model):
     message    = models.TextField()
     is_read    = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+# ─── SUBTASK MODEL ───────────────────────────────────────────────────────────
+class Subtask(models.Model):
+    task       = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    title      = models.CharField(max_length=255)
+    is_done    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = 'x' if self.is_done else ' '
+        return f"[{status}] {self.title}"
