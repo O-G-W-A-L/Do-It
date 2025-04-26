@@ -8,7 +8,7 @@ from .views import (
     MyTokenObtainPairView,
     TaskViewSet, ProjectViewSet, RoutineViewSet,
     GoalViewSet, FileAttachmentViewSet, NotificationViewSet,
-    CustomConfirmEmailView,
+    CustomConfirmEmailView, SubtaskViewSet,
 )
 
 router = DefaultRouter()
@@ -18,6 +18,7 @@ router.register(r'routines', RoutineViewSet)
 router.register(r'goals', GoalViewSet)
 router.register(r'files', FileAttachmentViewSet)
 router.register(r'notifications', NotificationViewSet)
+router.register(r'subtasks', SubtaskViewSet)
 
 urlpatterns = [
     path('hello/', hello_world),
