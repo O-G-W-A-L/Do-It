@@ -1,5 +1,3 @@
-# api/serializers.py
-
 import uuid
 from datetime import timedelta
 from django.utils import timezone
@@ -7,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.mail import send_mail
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -14,10 +13,10 @@ from .models import (
     EmailVerification,
     Task, Project, Routine, Goal,
     FileAttachment, Notification, Subtask,
+    Profile,
 )
 
-# ─── REGISTRATION & EMAIL VERIFICATION ─────────────────────────────────────────
-
+# REGISTRATION & EMAIL VERIFICATION
 class RegisterSerializer(serializers.ModelSerializer):
     email     = serializers.EmailField(required=True)
     password1 = serializers.CharField(write_only=True, validators=[validate_password])
@@ -52,7 +51,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
-
 class VerifyEmailSerializer(serializers.Serializer):
     token = serializers.UUIDField()
 
@@ -73,7 +71,6 @@ class VerifyEmailSerializer(serializers.Serializer):
         user.is_active = True
         user.save(update_fields=['is_active'])
         return user
-
 
 class ResendVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -101,9 +98,7 @@ class ResendVerificationSerializer(serializers.Serializer):
         )
         return ev
 
-
-# ─── PASSWORD RESET FLOW ────────────────────────────────────────────────────────
-
+# PASSWORD RESET FLOW 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -151,9 +146,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         ev.save(update_fields=['used'])
         return user
 
-
-# ─── JWT & USER SERIALIZER ───────────────────────────────────────────────────────
-
+# JWT & USER SERIALIZER
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -161,25 +154,30 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         return token
 
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ('profile_image', 'phone_number')
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(source='profile.profile_image', read_only=True)
+    phone_number  = serializers.CharField(source='profile.phone_number', read_only=True)
+
     class Meta:
         model  = User
-        fields = ('id', 'username', 'email')
+        fields = ('id', 'username', 'email', 'profile_image', 'phone_number')
 
-
-# ─── SUBTASK SERIALIZER ─────────────────────────────────────────────────────
+# SUBTASK SERIALIZER
 class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Subtask
         fields = ('id', 'title', 'is_done')
 
 
-# ─── TASK & RELATED SERIALIZERS ────────────────────────────────────────────
+# TASK & RELATED SERIALIZERS
 class TaskSerializer(serializers.ModelSerializer):
-    # Automatically set user to request.user
     user     = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    subtasks = SubtaskSerializer(many=True, required=False)  # ← nested
+    subtasks = SubtaskSerializer(many=True, required=False)
 
     class Meta:
         model            = Task
@@ -188,7 +186,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'due_date', 'type',
             'priority', 'routine', 'goal',
             'focus_block', 'is_done',
-            'subtasks',  # ← include subtasks
+            'subtasks',
             'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'created_at', 'updated_at')
@@ -210,30 +208,31 @@ class TaskSerializer(serializers.ModelSerializer):
         return task
 
 
+# PROJECT
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Project
         fields = '__all__'
 
-
+# Routine
 class RoutineSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Routine
         fields = '__all__'
 
-
+# Goal
 class GoalSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Goal
         fields = '__all__'
 
-
+# FileAttachment
 class FileAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model  = FileAttachment
         fields = '__all__'
 
-
+# Notification
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Notification

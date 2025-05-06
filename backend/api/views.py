@@ -1,12 +1,17 @@
-# api/views.py
-
-from rest_framework import viewsets, status
+# views.py
+from rest_framework import viewsets, status, parsers  # Import parsers here
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from allauth.account.views import ConfirmEmailView
+from rest_framework.views import APIView
+from rest_framework import serializers  # Import serializers
+from django.db.models import ObjectDoesNotExist
+
+from .models import Profile
+from .serializers import UserSerializer, ProfileSerializer
 
 from django.utils import timezone
 from django.db.models import Count
@@ -196,3 +201,40 @@ class SubtaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # only subtasks belonging to this user’s tasks
         return Subtask.objects.filter(task__user=self.request.user)
+    
+# user profile
+class UserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]  # Use imported parsers
+
+    def get(self, request):
+        try:
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        try:
+            user_serializer = UserSerializer(request.user, data=request.data, partial=True)
+            profile_serializer = None
+
+            if 'profile_image' in request.data or 'phone_number' in request.data:
+                try:
+                    profile = request.user.profile
+                except ObjectDoesNotExist:
+                    profile = Profile.objects.create(user=request.user)
+                profile_serializer = ProfileSerializer(profile, data=request.data, partial=True)
+
+            if user_serializer.is_valid() and (profile_serializer is None or profile_serializer.is_valid()):
+                user_serializer.save()
+                if profile_serializer:
+                    profile_serializer.save()
+                return Response(user_serializer.data)
+            else:
+                errors = user_serializer.errors
+                if profile_serializer and profile_serializer.errors:
+                    errors.update(profile_serializer.errors)
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)

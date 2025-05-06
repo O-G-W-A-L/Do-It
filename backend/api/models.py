@@ -3,6 +3,9 @@ from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.exceptions import ObjectDoesNotExist
 
 def default_expiry():
     """
@@ -102,7 +105,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-# ─── SUBTASK MODEL ───────────────────────────────────────────────────────────
+# SUBTASK MODEL
 class Subtask(models.Model):
     task       = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
     title      = models.CharField(max_length=255)
@@ -112,3 +115,25 @@ class Subtask(models.Model):
     def __str__(self):
         status = 'x' if self.is_done else ' '
         return f"[{status}] {self.title}"
+    
+#profile
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    bio = models.TextField(blank=True)
+    location = models.CharField(max_length=100, blank=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    else:
+        try:
+            instance.profile.save()
+        except ObjectDoesNotExist:
+            Profile.objects.create(user=instance)

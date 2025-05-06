@@ -131,6 +131,10 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 
+# Media settings for handling file uploads
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # -----------------------------------------------------------------------------
 # REST Framework & JWT
 # -----------------------------------------------------------------------------

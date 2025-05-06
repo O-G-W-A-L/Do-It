@@ -2,6 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from .views import UserMeView
+
 from .views import (
     hello_world,
     get_user,
@@ -36,6 +38,7 @@ urlpatterns = [
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
 
+    path('users/me/', UserMeView.as_view(), name='user-me'),
     # All app routes
     path('', include(router.urls)),
 ]

@@ -45,7 +45,7 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description', 'user__username')
     list_filter = ('priority', 'is_done', 'due_date')
     date_hierarchy = 'due_date'
-    raw_id_fields = ('project', 'routine', 'goal')  # efficient foreign‑key lookups :contentReference[oaicite:3]{index=3}
+    raw_id_fields = ('project', 'routine', 'goal')
 
 @admin.register(FileAttachment)
 class FileAttachmentAdmin(admin.ModelAdmin):
