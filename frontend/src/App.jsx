@@ -1,43 +1,38 @@
-// src/App.jsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+// App.jsx
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoutineProvider } from './contexts/RoutineContext';
-
-// Pages
-import LandingPage       from './pages/LandingPage';
-import LoginPage         from './pages/LoginPage';
-import RegisterPage      from './pages/RegisterPage';
-import Dashboard         from './pages/Dashboard';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import Dashboard from './pages/Dashboard';
 import EmailVerification from './pages/EmailVerification';
-
-// ← Added these two imports for your existing pages:
 import ProfilePage from './pages/ProfilePage';
-import Settings          from './pages/Settings';
-import Support           from './pages/Support';
+import Settings from './pages/Settings';
+import Support from './pages/Support';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading…</div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return user ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    axios.get('http://localhost:8000/api/hello/')
-      .then(response => setMessage(response.data.message))
-      .catch(error => console.error('There was an error!', error));
-  }, []);
-
   return (
-    <Router>
-      <AuthProvider>
-        <RoutineProvider>
-          <div>
-            <h1>{message}</h1>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <Router>
+        <AuthProvider>
+          <RoutineProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -54,7 +49,6 @@ export default function App() {
 
               <Route path="/verify-email/:key" element={<EmailVerification />} />
 
-              {/* ← New protected routes */}
               <Route
                 path="/profile"
                 element={
@@ -63,6 +57,7 @@ export default function App() {
                   </Protected>
                 }
               />
+
               <Route
                 path="/settings"
                 element={
@@ -71,6 +66,7 @@ export default function App() {
                   </Protected>
                 }
               />
+
               <Route
                 path="/support"
                 element={
@@ -80,9 +76,9 @@ export default function App() {
                 }
               />
             </Routes>
-          </div>
-        </RoutineProvider>
-      </AuthProvider>
-    </Router>
+          </RoutineProvider>
+        </AuthProvider>
+      </Router>
+    </GoogleOAuthProvider>
   );
 }

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
 
 const schema = yup.object({
   username: yup.string().required('Username is required'),
@@ -14,13 +15,25 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema)
   });
-  const { login, error, infoMessage } = useAuth();
+  const { login, loginWithGoogle, error, infoMessage } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const onSubmit = async data => {
     setIsLoading(true);
     await login(data.username, data.password);
     setIsLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error("Google login failed:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -151,6 +164,27 @@ export default function LoginPage() {
                       }`}
                     >
                       {isLoading ? 'Logging in...' : 'Log In'}
+                    </button>
+                  </div>
+                  
+                  {/* Divider */}
+                  <div className="relative flex items-center justify-center mt-6">
+                    <div className="border-t border-gray-200 w-full"></div>
+                    <div className="bg-white px-4 text-sm text-gray-500 absolute">or</div>
+                  </div>
+                  
+                  {/* Google Login Button */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      disabled={isGoogleLoading}
+                      className={`w-full py-3 px-6 rounded-full font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:shadow-md transition-all duration-300 flex items-center justify-center ${
+                        isGoogleLoading ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <FcGoogle className="w-5 h-5 mr-2" />
+                      {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
                     </button>
                   </div>
                   

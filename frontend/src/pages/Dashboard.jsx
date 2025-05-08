@@ -1,20 +1,21 @@
-import React, { useState, useCallback } from 'react';
-import Sidebar         from '../components/Sidebar';
-import TopBar          from '../components/TopBar';
-import HomePage        from './HomePage';
-import MyTasks         from '../components/MyTasks';
-import CalendarView    from '../components/CalendarView';
-import Priorities      from '../components/Priorities';
-import TaskDetail      from '../components/TaskDetail';
-import RoutineTracker  from '../components/RoutineTracker';
-import MyProgress      from '../components/MyProgress';
-import { useTasks }    from '../hooks/useTasks';
+import React, { useState, useCallback, useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
+import TopBar from '../components/TopBar';
+import HomePage from './HomePage';
+import MyTasks from '../components/MyTasks';
+import CalendarView from '../components/CalendarView';
+import Priorities from '../components/Priorities';
+import TaskDetail from '../components/TaskDetail';
+import RoutineTracker from '../components/RoutineTracker';
+import MyProgress from '../components/MyProgress';
+import { useTasks } from '../hooks/useTasks';
 import { useRoutines } from '../contexts/RoutineContext';
 
 export default function Dashboard() {
-  const [view, setView]              = useState('home');
-  const [selectedTask, setSelected]  = useState(null);
+  const [view, setView] = useState('home');
+  const [selectedTask, setSelected] = useState(null);
   const [operationError, setOpError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Task CRUD
   const {
@@ -28,20 +29,18 @@ export default function Dashboard() {
   } = useTasks();
 
   // Routine
-  const { routines, addRoutine, toggleRoutine } = useRoutines();  // ← grab toggleRoutine
+  const { routines, addRoutine, toggleRoutine } = useRoutines();
 
-  // Wrap a task → routine creation
   const handleMakeRoutine = useCallback(id => {
     const task = tasks.find(t => t.id === id);
     if (!task) throw new Error(`Task ${id} not found`);
     addRoutine({
       title: task.title,
-      time:  task.time || '',
-      type:  task.type.toLowerCase(),
+      time: task.time || '',
+      type: task.type.toLowerCase(),
     });
   }, [tasks, addRoutine]);
 
-  // Save handler for TaskDetail
   const handleSave = useCallback(
     async taskData => {
       setOpError(null);
@@ -62,10 +61,10 @@ export default function Dashboard() {
 
   const startCreate = () => {
     setSelected({
-      title:    '',
+      title: '',
       due_date: new Date().toISOString().split('T')[0],
       priority: 'Should Do',
-      type:     'Personal',
+      type: 'Personal',
     });
     setView('create');
     setOpError(null);
@@ -77,9 +76,16 @@ export default function Dashboard() {
     setOpError(null);
   };
 
+  const handleViewChange = useCallback(v => {
+    setView(v);
+    setSelected(null);
+    setOpError(null);
+    setIsSidebarOpen(false);
+  }, []);
+
   const renderMain = () => {
     if (isLoading) return <div>Loading…</div>;
-    if (error)     return <div className="text-red-600">Error: {error}</div>;
+    if (error) return <div className="text-red-600">Error: {error}</div>;
 
     if (view === 'create' || view === 'edit') {
       return (
@@ -107,7 +113,7 @@ export default function Dashboard() {
             onSelectTask={editTask}
             onToggleComplete={toggleComplete}
             onMakeRoutine={handleMakeRoutine}
-            onToggleRoutine={toggleRoutine}    // ← pass down
+            onToggleRoutine={toggleRoutine}
           />
         );
 
@@ -121,7 +127,7 @@ export default function Dashboard() {
             onDelete={deleteTask}
             onToggleComplete={toggleComplete}
             onMakeRoutine={handleMakeRoutine}
-            onToggleRoutine={toggleRoutine}    // ← pass down
+            onToggleRoutine={toggleRoutine}
             onSetTimer={updateTask}
             onSetAlarm={updateTask}
             onSetReminder={updateTask}
@@ -146,10 +152,10 @@ export default function Dashboard() {
             routines={routines}
             onDateCreate={({ dateStr }) => {
               setSelected({
-                title:    '',
+                title: '',
                 due_date: dateStr,
                 priority: 'Should Do',
-                type:     'Personal',
+                type: 'Personal',
               });
               setView('create');
             }}
@@ -178,26 +184,41 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar
-        currentView={view}
-        onViewChange={v => {
-          setView(v);
-          setSelected(null);
-          setOpError(null);
-        }}
-        onAddTask={startCreate}
-      />
-      <div className="flex-1 flex flex-col">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed z-40 h-screen w-64 transform transition-transform duration-200 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:relative md:translate-x-0`}
+      >
+        <Sidebar
+          currentView={view}
+          onViewChange={handleViewChange}
+          onAddTask={startCreate}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
         <TopBar
           title={
             view === 'create'
               ? 'New Task'
               : view === 'edit'
-                ? 'Edit Task'
-                : view.charAt(0).toUpperCase() + view.slice(1)
+              ? 'Edit Task'
+              : view.charAt(0).toUpperCase() + view.slice(1)
           }
+          onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
-        <main className="p-6 overflow-auto">{renderMain()}</main>
+        <main className="p-6 overflow-auto bg-gray-50">{renderMain()}</main>
       </div>
     </div>
   );

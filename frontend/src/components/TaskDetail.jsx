@@ -1,26 +1,27 @@
-// src/components/TaskDetail.jsx
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { FiTrash, FiPlus } from 'react-icons/fi';
+import { FiTrash, FiPlus, FiCalendar, FiFlag, FiTag, FiList, FiArrowLeft } from 'react-icons/fi';
 import TaskMenu from './TaskMenu';
 import { useTasks } from '../hooks/useTasks';
+import { useNavigate } from 'react-router-dom';
 
 const URGENCY_BADGES = {
-  'Must Do': 'bg-red-100 text-red-700',
-  'Should Do': 'bg-yellow-100 text-yellow-700',
-  'Could Do': 'bg-blue-100 text-blue-700',
-  'Might Do': 'bg-gray-100 text-gray-700',
+  'Must Do': 'bg-red-100 text-red-700 border-red-200',
+  'Should Do': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  'Could Do': 'bg-blue-100 text-blue-700 border-blue-200',
+  'Might Do': 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 const TYPE_BADGES = {
-  Personal: 'bg-blue-100 text-blue-800',
-  Work: 'bg-green-100 text-green-800',
-  Routine: 'bg-purple-100 text-purple-800',
-  Fitness: 'bg-red-100 text-red-800',
+  Personal: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  Work: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  Routine: 'bg-purple-100 text-purple-800 border-purple-200',
+  Fitness: 'bg-red-100 text-red-800 border-red-200',
 };
 
 export default function TaskDetail({ task = null }) {
   const { updateTaskSubtasks } = useTasks();
+  const navigate = useNavigate();
 
   const [subtasks, setSubtasks] = useState(task?.subtasks || []);
   const [newSubtaskTitle, setNewSub] = useState('');
@@ -36,7 +37,15 @@ export default function TaskDetail({ task = null }) {
   }, [task]);
 
   if (!task) {
-    return <div className="p-4 text-gray-500">No task selected.</div>;
+    return (
+      <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FiList className="w-8 h-8 text-indigo-600" />
+        </div>
+        <p className="text-gray-500 text-lg">No task selected</p>
+        <p className="text-gray-400 mt-2">Select a task to view its details or create a new one</p>
+      </div>
+    );
   }
 
   const dueDateStr = task.due_date
@@ -73,84 +82,113 @@ export default function TaskDetail({ task = null }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-6">
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      {/* Back button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 left-4 text-indigo-700 hover:text-indigo-900 transition-colors"
+      >
+        <FiArrowLeft className="w-5 h-5" />
+      </button>
+      
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">{task.title}</h2>
-        <TaskMenu task={task} />
+      <div className="bg-gradient-to-r from-indigo-900 to-cyan-700 px-6 py-8 text-white">
+        <h2 className="text-2xl font-bold mt-4">{task.title}</h2>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {task.priority && (
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${URGENCY_BADGES[task.priority]}`}>
+              {task.priority}
+            </span>
+          )}
+          {task.type && (
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${TYPE_BADGES[task.type]}`}>
+              {task.type}
+            </span>
+          )}
+        </div>
       </div>
-
-      {/* Badges */}
-      <div className="flex flex-wrap gap-2">
-        {task.priority && (
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${URGENCY_BADGES[task.priority]}`}>
-            {task.priority}
-          </span>
-        )}
-        {task.type && (
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${TYPE_BADGES[task.type]}`}>
-            {task.type}
-          </span>
-        )}
-      </div>
-
-      {/* Due Date */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-600">Due Date</h3>
-        <p className="mt-1 text-gray-800">{dueDateStr}</p>
-      </div>
-
-      {/* Doing List */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-600 mb-2">To-Do List</h3>
-
-        {/* Add new subtask */}
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            placeholder="New subtask..."
-            value={newSubtaskTitle}
-            onChange={e => setNewSub(e.target.value)}
-            className="flex-1 p-2 border rounded"
-          />
-          <button
-            onClick={addSubtask}
-            className="p-2 bg-green-600 text-white rounded hover:bg-green-700"
-            aria-label="Add subtask"
-          >
-            <FiPlus />
-          </button>
+      
+      {/* Content */}
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Due Date */}
+          <div className="bg-indigo-50 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-gray-600 flex items-center mb-2">
+              <FiCalendar className="mr-2 text-indigo-600" /> Due Date
+            </h3>
+            <p className="text-gray-800 font-medium">{dueDateStr}</p>
+          </div>
+          
+          {/* Task Actions */}
+          <div className="bg-indigo-50 rounded-xl p-4 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-600">Actions</h3>
+            <TaskMenu task={task} />
+          </div>
         </div>
 
-        {/* List of subtasks */}
-        {subtasks.length === 0 ? (
-          <p className="text-gray-500">No subtasks added.</p>
-        ) : (
-          <ul className="space-y-2">
-            {subtasks.map((st, i) => (
-              <li key={i} className="flex items-center justify-between">
-                <label className="flex items-center gap-2 flex-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!st.done} // ✅ Force checked to always be true/false
-                    onChange={() => toggleDone(i)}
-                    className="h-4 w-4 text-green-600"
-                  />
-                  <span className={st.done ? 'line-through text-gray-500' : ''}>
-                    {st.title}
-                  </span>
-                </label>
-                <button
-                  onClick={() => removeSubtask(i)}
-                  className="text-red-500 hover:text-red-700"
-                  aria-label="Remove subtask"
+        {/* Doing List */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <FiList className="mr-2 text-indigo-600" /> To-Do List
+          </h3>
+
+          {/* Add new subtask */}
+          <div className="flex gap-2 mb-6">
+            <input
+              type="text"
+              placeholder="Add a new subtask..."
+              value={newSubtaskTitle}
+              onChange={e => setNewSub(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onKeyPress={e => e.key === 'Enter' && addSubtask()}
+            />
+            <button
+              onClick={addSubtask}
+              className="p-2 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg hover:shadow-md transition-all"
+              aria-label="Add subtask"
+            >
+              <FiPlus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* List of subtasks */}
+          {subtasks.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-xl">
+              <p className="text-gray-500">No subtasks added yet.</p>
+              <p className="text-gray-400 text-sm mt-1">Break down your task into smaller steps</p>
+            </div>
+          ) : (
+            <ul className="space-y-2 bg-gray-50 rounded-xl p-4">
+              {subtasks.map((st, i) => (
+                <li 
+                  key={i} 
+                  className={`flex items-center justify-between p-3 rounded-lg ${
+                    st.done ? 'bg-green-50 border border-green-100' : 'bg-white border border-gray-100'
+                  }`}
                 >
-                  <FiTrash />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!st.done}
+                      onChange={() => toggleDone(i)}
+                      className="h-5 w-5 rounded-full text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+                    />
+                    <span className={st.done ? 'line-through text-gray-500' : 'text-gray-800'}>
+                      {st.title}
+                    </span>
+                  </label>
+                  <button
+                    onClick={() => removeSubtask(i)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                    aria-label="Remove subtask"
+                  >
+                    <FiTrash className="w-4 h-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -166,7 +204,7 @@ TaskDetail.propTypes = {
     subtasks: PropTypes.arrayOf(
       PropTypes.shape({
         title: PropTypes.string.isRequired,
-        done: PropTypes.bool, // ✅ not required, we handle undefined ourselves
+        done: PropTypes.bool,
       })
     ),
   }),

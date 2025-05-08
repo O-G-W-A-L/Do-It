@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
 
 const schema = yup.object({
   username:  yup.string().required('Username is required').min(3, 'Username must be at least 3 characters'),
@@ -17,13 +18,25 @@ export default function RegisterPage() {
   const { register: reg, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema)
   });
-  const { signup, error, infoMessage } = useAuth();
+  const { signup, signupWithGoogle, error, infoMessage } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const onSubmit = async data => {
     setSubmitting(true);
     await signup(data.username, data.email, data.password1, data.password2);
     setSubmitting(false);
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await signupWithGoogle();
+    } catch (error) {
+      console.error("Google signup failed:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -112,6 +125,27 @@ export default function RegisterPage() {
                     {infoMessage}
                   </div>
                 )}
+                
+                {/* Google Signup Button */}
+                <div className="mb-6">
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignup}
+                    disabled={isGoogleLoading}
+                    className={`w-full py-3 px-6 rounded-full font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:shadow-md transition-all duration-300 flex items-center justify-center ${
+                      isGoogleLoading ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <FcGoogle className="w-5 h-5 mr-2" />
+                    {isGoogleLoading ? 'Connecting...' : 'Sign up with Google'}
+                  </button>
+                </div>
+                
+                {/* Divider */}
+                <div className="relative flex items-center justify-center mb-6">
+                  <div className="border-t border-gray-200 w-full"></div>
+                  <div className="bg-white px-4 text-sm text-gray-500 absolute">or</div>
+                </div>
                 
                 {/* Registration form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
