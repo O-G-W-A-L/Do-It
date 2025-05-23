@@ -63,16 +63,6 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           ))}
         </div>
 
-        {/* Add Task Button */}
-        <div className="px-3 mb-6">
-          <button
-            onClick={onAddTask}
-            className="flex items-center justify-center w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg hover:shadow-md transition-all"
-          >
-            <FiPlus className="mr-2" /> Add New Task
-          </button>
-        </div>
-
         {/* Tools Section */}
         <div className="mb-6">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
