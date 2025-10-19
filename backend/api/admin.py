@@ -29,6 +29,7 @@ class GoalAdmin(admin.ModelAdmin):
     list_filter = ('is_monthly',)
     date_hierarchy = 'created_at'
 
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = (

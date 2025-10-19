@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 import {
   FiHome, FiGrid, FiAlertTriangle,
   FiCalendar, FiFolder, FiRepeat, FiBarChart2,
-  FiPlus, FiLogOut, FiX, FiSettings, FiHelpCircle
+  FiPlus, FiLogOut, FiX, FiSettings, FiHelpCircle,
+  FiCpu // AI icon
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 
@@ -11,6 +12,7 @@ const MENU = [
   { key: 'home',       icon: FiHome,          label: 'Home' },
   { key: 'mytasks',    icon: FiGrid,          label: 'My Tasks' },
   { key: 'priorities', icon: FiAlertTriangle, label: 'Priorities' },
+  { key: 'aitasks',    icon: FiCpu,           label: 'AI Task Generator' }, // NEW ITEM
   { key: 'calendar',   icon: FiCalendar,      label: 'My Calendar' },
   { key: 'projects',   icon: FiFolder,        label: 'Projects' },
   { key: 'routine',    icon: FiRepeat,        label: 'Routine Tracker' },
@@ -47,7 +49,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Main
           </h3>
-          {MENU.slice(0, 3).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(0, 4).map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               onClick={() => onViewChange(key)}
@@ -68,7 +70,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Tools
           </h3>
-          {MENU.slice(3, 7).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(4, 8).map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               onClick={() => onViewChange(key)}
@@ -89,7 +91,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Account
           </h3>
-          {MENU.slice(7).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(8).map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               onClick={() => onViewChange(key)}

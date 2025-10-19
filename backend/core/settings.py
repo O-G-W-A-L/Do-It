@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
 
-    # Third‑party
+    # Third-party
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -44,9 +44,7 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
-# -----------------------------------------------------------------------------
 # Middleware
-# -----------------------------------------------------------------------------
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -54,7 +52,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # django‑allauth requires this immediately after AuthenticationMiddleware
+    # django-allauth requires this immediately after AuthenticationMiddleware
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -62,18 +60,16 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
-# -----------------------------------------------------------------------------
 # Templates
-# -----------------------------------------------------------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Specify the base template directory
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',  # required by allauth
+                'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -83,9 +79,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# -----------------------------------------------------------------------------
 # Database (PostgreSQL)
-# -----------------------------------------------------------------------------
 DATABASES = {
     'default': {
         'ENGINE':   'django.db.backends.postgresql',
@@ -97,9 +91,7 @@ DATABASES = {
     }
 }
 
-# -----------------------------------------------------------------------------
 # Password validation
-# -----------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -107,22 +99,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# -----------------------------------------------------------------------------
 # Internationalization
-# -----------------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'UTC'
 USE_I18N      = True
 USE_TZ        = True
 
-# -----------------------------------------------------------------------------
 # Static files
-# -----------------------------------------------------------------------------
 STATIC_URL = '/static/'
 
-# -----------------------------------------------------------------------------
 # CORS
-# -----------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -135,9 +121,7 @@ CORS_ALLOW_CREDENTIALS = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# -----------------------------------------------------------------------------
 # REST Framework & JWT
-# -----------------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -157,35 +141,42 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM':            'user_id',
 }
 
-# -----------------------------------------------------------------------------
-# django‑allauth config (replace deprecated settings)
-# -----------------------------------------------------------------------------
-ACCOUNT_LOGIN_METHODS     = {'username', 'email'}
-ACCOUNT_SIGNUP_FIELDS     = ['username*', 'email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_REQUIRED    = True
-ACCOUNT_UNIQUE_EMAIL      = True
-ACCOUNT_EMAIL_VERIFICATION= 'mandatory'
+# django-allauth config
+ACCOUNT_LOGIN_METHODS       = {'username', 'email'}
+ACCOUNT_SIGNUP_FIELDS       = ['username*', 'email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_REQUIRED      = True
+ACCOUNT_UNIQUE_EMAIL        = True
+ACCOUNT_EMAIL_VERIFICATION  = 'mandatory'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-LOGIN_REDIRECT_URL        = '/'
-LOGOUT_REDIRECT_URL       = '/'
+LOGIN_REDIRECT_URL          = '/'
+LOGOUT_REDIRECT_URL         = '/'
 
-# -----------------------------------------------------------------------------
+# Google OAuth2 configuration for django-allauth
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['email', 'profile'],
+        'AUTH_PARAMS': {'access_type': 'offline'},
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+            'secret':    os.getenv('GOOGLE_CLIENT_SECRET'),
+            'key':       '',
+        }
+    }
+}
+
 # Email backend
-# -----------------------------------------------------------------------------
 if DEBUG:
     # Prints emails to console in dev
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     # Real SMTP in production
-    EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST          = os.getenv('EMAIL_HOST')
-    EMAIL_PORT          = int(os.getenv('EMAIL_PORT', 587))
-    EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-    EMAIL_USE_TLS       = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true','1','yes')
-    DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
+    EMAIL_BACKEND          = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST             = os.getenv('EMAIL_HOST')
+    EMAIL_PORT             = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_HOST_USER        = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD    = os.getenv('EMAIL_HOST_PASSWORD')
+    EMAIL_USE_TLS          = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true','1','yes')
+    DEFAULT_FROM_EMAIL     = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
 
-# -----------------------------------------------------------------------------
 # Frontend URL for email links
-# -----------------------------------------------------------------------------
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

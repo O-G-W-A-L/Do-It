@@ -25,7 +25,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         // Use our `api` instance so baseURL is applied
-        const { data } = await api.post('/auth/refresh/', { refresh: refreshToken });
+        const { data } = await api.post('/api/auth/refresh/', { refresh: refreshToken });
 
         // Save new token and retry original request
         localStorage.setItem('access_token', data.access);

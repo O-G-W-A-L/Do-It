@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/auth/registration/', { username, email, password1, password2 });
+      await api.post('/api/auth/registration/', { username, email, password1, password2 });
       setInfoMessage('Registration successful! Check your email to verify your account.');
       navigate('/login');
     } catch (err) {
@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/auth/resend-verification/', { email });
+      await api.post('/api/auth/resend-verification/', { email });
       setInfoMessage('Verification email resent. Check your inbox.');
     } catch (err) {
       setError(err.response?.data?.email?.[0] || 'Could not resend verification');
@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/auth/password-reset/', { email });
+      await api.post('/api/auth/password-reset/', { email });
       setInfoMessage('Password reset link sent. Check your email.');
     } catch (err) {
       setError(err.response?.data?.email?.[0] || 'Could not send reset link');
@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/auth/password-reset-confirm/', { token, new_password: newPassword });
+      await api.post('/api/auth/password-reset-confirm/', { token, new_password: newPassword });
       setInfoMessage('Password reset successful! You may now log in.');
       navigate('/login');
     } catch (err) {

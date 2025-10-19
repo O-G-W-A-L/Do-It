@@ -48,7 +48,7 @@ class Routine(models.Model):
     def __str__(self):
         return self.title
 
-
+# goals model
 class Goal(models.Model):
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='goals')
     title       = models.CharField(max_length=255)
@@ -59,7 +59,7 @@ class Goal(models.Model):
     def __str__(self):
         return self.title
 
-
+# task model
 class Task(models.Model):
     PRIORITY_CHOICES = [
         ('Must Do',   'Must Do'),
@@ -126,7 +126,6 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
