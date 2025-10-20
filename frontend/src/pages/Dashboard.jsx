@@ -19,6 +19,7 @@ export default function CourseLanding() {
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [enrollingCourseId, setEnrollingCourseId] = useState(null);
+  const [showAllCourses, setShowAllCourses] = useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -322,10 +323,25 @@ export default function CourseLanding() {
         {/* Available Courses Section */}
         <section>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Available Courses</h2>
-            <button className="text-sm text-brand-blue hover:text-brand-blue-light font-medium flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </button>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Available Courses
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                ({showAllCourses ? availableCourses.length : Math.min(6, availableCourses.length)} of {availableCourses.length} courses)
+              </span>
+            </h2>
+            {availableCourses.length > 6 && !showAllCourses && (
+              <button
+                onClick={() => setShowAllCourses(true)}
+                className="text-sm text-brand-blue hover:text-brand-blue-light font-medium flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+            {showAllCourses && (
+              <div className="text-sm text-gray-500 font-medium">
+                All courses shown
+              </div>
+            )}
           </div>
 
           {coursesLoading ? (
@@ -358,7 +374,7 @@ export default function CourseLanding() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableCourses.slice(0, 6).map(course => (
+              {(showAllCourses ? availableCourses : availableCourses.slice(0, 6)).map(course => (
                 <div key={course.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
