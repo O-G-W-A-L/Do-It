@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import Hub from './pages/Hub';
 import EmailVerification from './pages/EmailVerification';
 import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
@@ -42,6 +43,15 @@ export default function App() {
                 element={
                   <Protected>
                     <Dashboard />
+                  </Protected>
+                }
+              />
+
+              <Route
+                path="/hub"
+                element={
+                  <Protected>
+                    <Hub />
                   </Protected>
                 }
               />
