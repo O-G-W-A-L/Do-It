@@ -1,14 +1,26 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-# Import viewsets when they're created
-# from .views import ProgressViewSet, EnrollmentViewSet
+from .views import (
+    LessonProgressViewSet, QuizSubmissionViewSet, AssignmentSubmissionViewSet,
+    QuizQuestionViewSet, student_progress_dashboard, instructor_analytics_dashboard,
+    unlock_content
+)
 
-# router = DefaultRouter()
-# router.register(r'progress', ProgressViewSet)
-# router.register(r'enrollments', EnrollmentViewSet)
+router = DefaultRouter()
+router.register(r'progress', LessonProgressViewSet)
+router.register(r'quiz-submissions', QuizSubmissionViewSet)
+router.register(r'assignment-submissions', AssignmentSubmissionViewSet)
+router.register(r'quiz-questions', QuizQuestionViewSet)
 
 urlpatterns = [
-    # API endpoints will be added here
-    # path('', include(router.urls)),
+    # ViewSet endpoints
+    path('', include(router.urls)),
+
+    # Dashboard endpoints
+    path('dashboard/student/', student_progress_dashboard, name='student-progress-dashboard'),
+    path('dashboard/instructor/', instructor_analytics_dashboard, name='instructor-analytics-dashboard'),
+
+    # Utility endpoints
+    path('unlock-content/', unlock_content, name='unlock-content'),
 ]
