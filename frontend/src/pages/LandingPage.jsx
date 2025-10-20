@@ -151,7 +151,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           {/* Main Headline - Powerful and direct */}
           <h1 className="font-bold text-5xl md:text-7xl lg:text-8xl text-white mb-8 tracking-tight leading-tight">
-            STOP<br />
+            F**K OVER<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">LEARNING.</span><br />
             START<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-300 to-white">BUILDING.</span>

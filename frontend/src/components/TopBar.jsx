@@ -11,26 +11,18 @@ import {
   FiBell
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import api from '../services/api.js';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TopBar({ onLogout, onMenuToggle }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isDark, setIsDark] = useState(
     () => document.documentElement.classList.contains('dark')
   );
-  const [profileImage, setProfileImage] = useState(null);
   const [cacheBuster, setCacheBuster] = useState(Date.now());
   const menuRef = useRef();
   const searchRef = useRef();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  // Fetch current user's profile (to get profile_image)
-  useEffect(() => {
-    api
-      .get('/api/users/me/')
-      .then(({ data }) => setProfileImage(data.profile_image))
-      .catch((err) => console.error('Failed fetching profile:', err));
-  }, [cacheBuster]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -120,9 +112,9 @@ export default function TopBar({ onLogout, onMenuToggle }) {
                 aria-label="Open user menu"
               >
                 <div className="w-9 h-9 rounded-full border-2 border-white/70 overflow-hidden hover:border-white transition-colors">
-                  {profileImage ? (
+                  {user?.profile_image ? (
                     <img
-                      src={resolveImageUrl(profileImage) || "/placeholder.svg"}
+                      src={resolveImageUrl(user.profile_image) || "/placeholder.svg"}
                       alt="User avatar"
                       className="w-full h-full object-cover"
                       onError={(e) => {

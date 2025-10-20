@@ -6,13 +6,15 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Calendar, BookOpen, FolderOpen, BarChart3,
   ChevronDown, ChevronRight, CheckCircle, PlayCircle,
-  Award, TrendingUp
+  Award, TrendingUp, ChevronUp, ChevronLeft
 } from 'lucide-react';
 
 export default function Hub() {
   const [view, setView] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedReports, setExpandedReports] = useState({});
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [expandedModules, setExpandedModules] = useState({});
 
   // Course context for course-specific functionality
   const { enrollments, courses } = useCourseContext();
@@ -265,7 +267,7 @@ export default function Hub() {
                               }`}>
                                 {enrollment.status}
                               </span>
-                              <span>Progress: {enrollment.progress_percentage}%</span>
+                              <span>Progress: {Number(enrollment.progress_percentage)}%</span>
                               <span>Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -304,9 +306,180 @@ export default function Hub() {
       case 'projects':
         return (
           <div className="space-y-6">
+            {/* Top Bar with Course Selector */}
+            <div className="bg-white rounded-lg p-4 flex justify-between items-center border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700">Course:</span>
+                <select
+                  value={selectedCourse || ''}
+                  onChange={(e) => setSelectedCourse(e.target.value || null)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+                >
+                  <option value="">All Courses</option>
+                  {enrollments.map(enrollment => {
+                    const course = courses.find(c => c.id === enrollment.course);
+                    return (
+                      <option key={enrollment.id} value={enrollment.id}>
+                        {course?.title || 'Course Title'} ({enrollment.progress_percentage}%)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">Average Progress</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {enrollments.length > 0
+                    ? Math.round(enrollments.reduce((sum, e) => sum + e.progress_percentage, 0) / enrollments.length)
+                    : 0
+                  }%
+                </div>
+              </div>
+            </div>
+
+            {/* My Projects Section */}
             <div className="bg-white rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Projects</h2>
-              <p className="text-gray-600">Course projects and assignments will be displayed here.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">My Projects</h2>
+              <div className="space-y-4">
+                {enrollments
+                  .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
+                  .map(enrollment => {
+                    const course = courses.find(c => c.id === enrollment.course);
+                    return (
+                      <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                #{enrollment.id}
+                              </span>
+                              <button
+                                onClick={() => window.location.href = '/dashboard'}
+                                className="text-brand-blue hover:text-brand-blue-light font-medium text-left"
+                              >
+                                {course?.title || 'Course Title'}
+                              </button>
+                            </div>
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <p>Started: {new Date(enrollment.enrolled_at).toLocaleDateString()}</p>
+                              <p>Deadline: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
+                              {Number(enrollment.progress_percentage).toFixed(1)}% done
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {enrollments.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    <FolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No projects available</p>
+                    <p className="text-sm mt-1">Enroll in courses to see your projects</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* All Projects Section */}
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">All Projects</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const allKeys = enrollments.reduce((keys, enrollment) => {
+                        // For now, we'll use enrollment ID as module key
+                        // In a real implementation, this would be actual module IDs
+                        keys[enrollment.id] = true;
+                        return keys;
+                      }, {});
+                      setExpandedModules(allKeys);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Expand all
+                  </button>
+                  <button
+                    onClick={() => setExpandedModules({})}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Collapse all
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {enrollments
+                  .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
+                  .map(enrollment => {
+                    const course = courses.find(c => c.id === enrollment.course);
+                    const isExpanded = expandedModules[enrollment.id];
+
+                    return (
+                      <div key={enrollment.id} className="border border-gray-200 rounded-lg">
+                        <button
+                          onClick={() => setExpandedModules(prev => ({
+                            ...prev,
+                            [enrollment.id]: !prev[enrollment.id]
+                          }))}
+                          className="w-full flex justify-between items-center p-4 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="w-5 h-5 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5 text-gray-500" />
+                            )}
+                            <span className="font-medium text-gray-900">
+                              {course?.title || 'Course Title'} - Introduction Modules
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {enrollment.progress_percentage}% complete
+                          </span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-4 pb-4 space-y-2">
+                            {/* Sample module items - in real implementation, these would be actual course modules */}
+                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-900">Module 1: Getting Started</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-200 rounded-full h-2">
+                                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                </div>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-900">Module 2: Core Concepts</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-200 rounded-full h-2">
+                                  <div className="bg-brand-blue h-2 rounded-full" style={{ width: `${Math.max(0, enrollment.progress_percentage - 20)}%` }}></div>
+                                </div>
+                                {enrollment.progress_percentage >= 40 && <CheckCircle className="w-4 h-4 text-green-500" />}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-900">Module 3: Advanced Topics</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-200 rounded-full h-2">
+                                  <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         );

@@ -302,7 +302,7 @@ export default function CourseLanding() {
 
                     <div className="flex flex-col gap-2">
                       <Link
-                        to={`/course/${course.courseId}`}
+                        to="/hub"
                         className="bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors whitespace-nowrap text-center"
                       >
                         {course.status === 'completed' ? 'Review Course' : 'Continue Learning'}
