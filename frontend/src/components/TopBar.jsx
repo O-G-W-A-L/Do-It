@@ -11,7 +11,7 @@ import {
   FiBell
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import api from '../axiosInstance';
+import api from '../services/api.js';
 
 export default function TopBar({ onLogout, onMenuToggle }) {
   const [open, setOpen] = useState(false);

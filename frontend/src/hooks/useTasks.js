@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import api from '../axiosInstance';
+import api from '../services/api.js';
 
 export function useTasks() {
   const [tasks, setTasks]       = useState([]);
@@ -7,7 +7,7 @@ export function useTasks() {
   const [isLoading, setLoading] = useState(true);
   const [error, setError]       = useState(null);
 
-  // ─── Fetch Tasks ──────────────────────────────────────────────────────
+  // Fetch Tasks
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -115,7 +115,7 @@ export function useTasks() {
     return res.data;
   }, [tasks]);
 
-  // ─── Update Only Subtasks ─────────────────────────────────────────────
+  // Update Only Subtasks
   const updateTaskSubtasks = useCallback(async (id, newSubtasks) => {
     const task = tasks.find(t => t.id === id);
     if (!task) throw new Error('Task not found');

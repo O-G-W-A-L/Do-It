@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../axiosInstance';
+import api from '../services/api.js';
 import { FiCamera, FiArrowLeft, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 
 const ProfilePage = () => {

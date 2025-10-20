@@ -1,7 +1,6 @@
-// src/pages/EmailVerification.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from '../axiosInstance';
+import api from '../services/api.js';
 
 export default function EmailVerification() {
   const { key } = useParams();
@@ -11,7 +10,7 @@ export default function EmailVerification() {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        await axios.post('/auth/registration/verify-email/', { key });
+        await api.post('/api/auth/verify-email/', { key });
         setStatus('Email verified successfully! Redirecting to login...');
         setTimeout(() => navigate('/login'), 3000);
       } catch (error) {

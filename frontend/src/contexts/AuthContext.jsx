@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../axiosInstance';
+import { authService } from '../services/auth.js';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
@@ -18,8 +18,12 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const res = await api.get('/api/auth/user/');
-      setUser(res.data);
+      const result = await authService.getCurrentUser();
+      if (result.success) {
+        setUser(result.data);
+      } else {
+        setUser(null);
+      }
     } catch {
       setUser(null);
     } finally {
@@ -34,13 +38,17 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     setError(null);
     try {
-      const { data } = await api.post('/api/auth/login/', { username, password });
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      await fetchUser();
-      navigate('/dashboard');
+      const result = await authService.login({ username, password });
+      if (result.success) {
+        localStorage.setItem('access_token', result.data.access);
+        localStorage.setItem('refresh_token', result.data.refresh);
+        await fetchUser();
+        navigate('/dashboard');
+      } else {
+        setError(result.error || 'Login failed');
+      }
     } catch (err) {
-      setError('Invalid credentials or unverified email');
+      setError('Login failed. Please try again.');
     }
   };
 
@@ -48,13 +56,20 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/api/auth/registration/', { username, email, password1, password2 });
-      setInfoMessage('Registration successful! Check your email to verify your account.');
-      navigate('/login');
+      const result = await authService.register({
+        username,
+        email,
+        password1,
+        password2
+      });
+      if (result.success) {
+        setInfoMessage('Registration successful! Check your email to verify your account.');
+        navigate('/login');
+      } else {
+        setError(result.error || 'Registration failed');
+      }
     } catch (err) {
-      const data = err.response?.data;
-      const field = Object.keys(data || {})[0];
-      setError(data?.[field]?.[0] || 'Registration failed');
+      setError('Registration failed. Please try again.');
     }
   };
 
@@ -62,10 +77,14 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/api/auth/resend-verification/', { email });
-      setInfoMessage('Verification email resent. Check your inbox.');
+      const result = await authService.resendVerification(email);
+      if (result.success) {
+        setInfoMessage('Verification email resent. Check your inbox.');
+      } else {
+        setError(result.error || 'Could not resend verification');
+      }
     } catch (err) {
-      setError(err.response?.data?.email?.[0] || 'Could not resend verification');
+      setError('Could not resend verification. Please try again.');
     }
   };
 
@@ -73,10 +92,14 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/api/auth/password-reset/', { email });
-      setInfoMessage('Password reset link sent. Check your email.');
+      const result = await authService.resetPassword(email);
+      if (result.success) {
+        setInfoMessage('Password reset link sent. Check your email.');
+      } else {
+        setError(result.error || 'Could not send reset link');
+      }
     } catch (err) {
-      setError(err.response?.data?.email?.[0] || 'Could not send reset link');
+      setError('Could not send reset link. Please try again.');
     }
   };
 
@@ -84,11 +107,32 @@ export function AuthProvider({ children }) {
     setError(null);
     setInfoMessage(null);
     try {
-      await api.post('/api/auth/password-reset-confirm/', { token, new_password: newPassword });
-      setInfoMessage('Password reset successful! You may now log in.');
-      navigate('/login');
+      const result = await authService.confirmPasswordReset({ token, new_password: newPassword });
+      if (result.success) {
+        setInfoMessage('Password reset successful! You may now log in.');
+        navigate('/login');
+      } else {
+        setError(result.error || 'Reset failed');
+      }
     } catch (err) {
-      setError(err.response?.data?.token?.[0] || 'Reset failed');
+      setError('Reset failed. Please try again.');
+    }
+  };
+
+  const loginWithGoogle = async (token) => {
+    setError(null);
+    try {
+      const result = await authService.googleLogin(token);
+      if (result.success) {
+        localStorage.setItem('access_token', result.data.access);
+        localStorage.setItem('refresh_token', result.data.refresh);
+        await fetchUser();
+        navigate('/dashboard');
+      } else {
+        setError(result.error || 'Google login failed');
+      }
+    } catch (err) {
+      setError('Google login failed. Please try again.');
     }
   };
 
@@ -107,6 +151,7 @@ export function AuthProvider({ children }) {
       infoMessage,
       login,
       signup,
+      loginWithGoogle,
       resendVerification,
       requestPasswordReset,
       confirmPasswordReset,
