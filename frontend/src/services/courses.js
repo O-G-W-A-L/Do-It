@@ -8,7 +8,7 @@ export const coursesService = {
   async getCourses(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = `/api/courses/${queryString ? `?${queryString}` : ''}`;
+      const url = `/api/courses/courses/${queryString ? `?${queryString}` : ''}`;
       const response = await api.get(url);
       return {
         success: true,
@@ -24,7 +24,7 @@ export const coursesService = {
 
   async getCourse(courseId) {
     try {
-      const response = await api.get(`/api/courses/${courseId}/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/`);
       return {
         success: true,
         data: response.data
@@ -57,7 +57,7 @@ export const coursesService = {
   // Course creation and management (instructors/admins)
   async createCourse(courseData) {
     try {
-      const response = await api.post('/api/courses/', courseData);
+      const response = await api.post('/api/courses/courses/', courseData);
       return {
         success: true,
         data: response.data
@@ -72,7 +72,7 @@ export const coursesService = {
 
   async updateCourse(courseId, courseData) {
     try {
-      const response = await api.put(`/api/courses/${courseId}/`, courseData);
+      const response = await api.put(`/api/courses/courses/${courseId}/`, courseData);
       return {
         success: true,
         data: response.data
@@ -87,7 +87,7 @@ export const coursesService = {
 
   async deleteCourse(courseId) {
     try {
-      await api.delete(`/api/courses/${courseId}/`);
+      await api.delete(`/api/courses/courses/${courseId}/`);
       return { success: true };
     } catch (error) {
       return {
@@ -191,7 +191,7 @@ export const coursesService = {
   // Enrollment management
   async enrollInCourse(courseId, enrollmentData = {}) {
     try {
-      const response = await api.post(`/api/courses/${courseId}/enroll/`, enrollmentData);
+      const response = await api.post(`/api/courses/courses/${courseId}/enroll/`, enrollmentData);
       return {
         success: true,
         data: response.data
@@ -370,5 +370,3 @@ export const coursesService = {
     }
   }
 };
-
-export default coursesService;
