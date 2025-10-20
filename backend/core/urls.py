@@ -10,6 +10,9 @@ urlpatterns = [
     path('api/auth/', include('users.urls')),      # Authentication & user management
     path('api/courses/', include('courses.urls')), # Course content & enrollment
     path('api/progress/', include('progress.urls')), # Learning progress & analytics
+    path('api/payments/', include('payments.urls')), # Payment processing & billing
+    path('api/notifications/', include('notifications.urls')), # Notification system
+    path('api/analytics/', include('analytics.urls')), # Analytics & insights
 
     # Legacy dj-rest-auth endpoints (for compatibility)
     path('api/auth/', include('dj_rest_auth.urls')),
