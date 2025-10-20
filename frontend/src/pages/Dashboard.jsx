@@ -93,25 +93,25 @@ export default function CourseLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-slate-900 shadow-md py-3' : 'bg-slate-900 py-4'
+        scrolled ? 'bg-white shadow-md py-3 border-b border-gray-200' : 'bg-white py-4'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <div className="text-white font-bold text-2xl">TechHub</div>
+          <div className="text-gray-900 font-bold text-2xl">Do-It</div>
           <div className="flex items-center gap-6">
-            <Link to="/hub" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors text-sm">
+            <Link to="/hub" className="flex items-center gap-2 text-gray-600 hover:text-brand-blue transition-colors text-sm">
               <Grid3X3 className="w-4 h-4" />
               Workspace
             </Link>
-            <div className="flex items-center gap-2 text-white/90 text-sm">
-              <span className="px-3 py-1 bg-white/10 rounded-full">2600 points</span>
+            <div className="flex items-center gap-2 text-gray-600 text-sm">
+              <span className="px-3 py-1 bg-brand-blue/10 text-brand-blue rounded-full">2600 points</span>
             </div>
-            <button className="text-white/80 hover:text-white">
+            <button className="text-gray-600 hover:text-brand-blue">
               <Bell className="w-5 h-5" />
             </button>
-            <div className="w-9 h-9 rounded-full bg-cyan-600 flex items-center justify-center text-white font-semibold text-sm">
+            <div className="w-9 h-9 rounded-full bg-brand-blue flex items-center justify-center text-white font-semibold text-sm">
               JA
             </div>
           </div>
@@ -119,23 +119,23 @@ export default function CourseLanding() {
       </header>
 
       {/* Hero Welcome Section */}
-      <section className="bg-slate-900 text-white py-16 relative overflow-hidden">
+      <section className="bg-gray-900 text-white py-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-blue/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-cyan/30 rounded-full blur-3xl"></div>
         </div>
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <p className="text-cyan-400 text-sm font-medium mb-2">Welcome to the TechHub</p>
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">Your Tech Learning Journey Starts Here</h1>
-          <p className="text-white/80 text-lg">Build skills, collaborate with peers, achieve your goals.</p>
+          <p className="text-accent-cyan text-sm font-medium mb-2">Welcome to Do-It Learning</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3">Your Learning Journey Starts Here</h1>
+          <p className="text-gray-300 text-lg">Build real skills, ship production code, advance your career.</p>
         </div>
       </section>
 
       {/* Greeting */}
-      <section className="bg-white border-b border-slate-200">
+      <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Hello Jonathan Amos!</h2>
-          <p className="text-slate-600">Ready to level up? Your next course is waiting.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello Jonathan Amos!</h2>
+          <p className="text-gray-600">Ready to level up? Your next course is waiting.</p>
         </div>
       </section>
 
@@ -143,8 +143,8 @@ export default function CourseLanding() {
         {/* My Courses Section */}
         <section className="mb-16">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">My Courses</h2>
-            <button className="text-sm text-cyan-600 hover:text-cyan-700 font-medium flex items-center gap-1">
+            <h2 className="text-2xl font-bold text-gray-900">My Courses</h2>
+            <button className="text-sm text-brand-blue hover:text-brand-blue-light font-medium flex items-center gap-1">
               View More <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -162,11 +162,11 @@ export default function CourseLanding() {
 
           <div className="space-y-6">
             {enrolledCourses.map(course => (
-              <div key={course.id} className="bg-white rounded-lg border border-slate-200 p-6 hover:shadow-md transition-shadow">
+              <div key={course.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <h3 className="text-lg font-semibold text-slate-900">{course.title}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{course.title}</h3>
                       {course.status === 'live' ? (
                         <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
                           Live
@@ -206,8 +206,8 @@ export default function CourseLanding() {
         {/* Available Courses Section */}
         <section>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Available Courses</h2>
-            <button className="text-sm text-cyan-600 hover:text-cyan-700 font-medium flex items-center gap-1">
+            <h2 className="text-2xl font-bold text-gray-900">Available Courses</h2>
+            <button className="text-sm text-brand-blue hover:text-brand-blue-light font-medium flex items-center gap-1">
               View All <ChevronRight className="w-4 h-4" />
             </button>
           </div>

@@ -7,26 +7,35 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary background: smooth smoky dark gray with deep blue gradient
-        primary: {
-          bg: '#111315',
-          'gradient-start': '#1E2A78',
-          'gradient-end': '#111315',
+        // Primary Brand Color: Deep Electric Blue
+        brand: {
+          blue: '#2563EB',      // Primary brand color
+          'blue-light': '#3B82F6',  // Hover states
+          'blue-dark': '#1D4ED8',   // Active states
         },
-        // Primary accent: Electric Blue
+        // Neutral Grays - Clean and Professional
+        gray: {
+          50: '#F8FAFC',   // Background
+          100: '#F1F5F9',  // Surface light
+          200: '#E2E8F0',  // Borders
+          300: '#CBD5E1',  // Dividers
+          400: '#94A3B8',  // Text muted
+          500: '#64748B',  // Text secondary
+          600: '#475569',  // Text primary
+          700: '#334155',  // Headings
+          800: '#1E293B',  // Dark headings
+          900: '#0F172A',  // Darkest
+        },
+        // Semantic Colors
+        success: '#059669',  // Green
+        error: '#DC2626',   // Red
+        warning: '#D97706', // Amber
+        info: '#2563EB',    // Blue
+        // Minimal Accent
         accent: {
-          electric: '#2979FF',
-          cyan: '#00E5FF',
+          cyan: '#06B6D4',    // For highlights
+          amber: '#F59E0B',   // For achievements
         },
-        // Typography colors
-        text: {
-          heading: '#FFFFFF',
-          body: '#B0B0B0',
-        },
-        // Status colors
-        success: '#4CAF50',
-        error: '#FF5252',
-        info: '#2196F3',
       },
       fontFamily: {
         // Heading font: Poppins

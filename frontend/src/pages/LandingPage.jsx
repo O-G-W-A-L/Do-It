@@ -99,7 +99,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white font-sans antialiased">
       {/* Enhanced Navigation - Ultra minimal */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-lg border-b border-gray-100' : 'bg-transparent'
+        scrolled ? 'bg-white/95 backdrop-blur-lg border-b border-gray-200' : 'bg-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
@@ -109,10 +109,10 @@ export default function LandingPage() {
 
             {/* Desktop Navigation - Ultra minimal */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link to="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">Login</Link>
+              <Link to="/login" className="text-gray-600 hover:text-brand-blue transition-colors text-sm font-medium">Login</Link>
               <Link
                 to="/register"
-                className="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-all duration-300 text-sm"
+                className="bg-brand-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-blue-light transition-all duration-300 text-sm"
               >
                 Start Learning
               </Link>
