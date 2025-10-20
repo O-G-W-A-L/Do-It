@@ -4,21 +4,24 @@ import {
   FiHome, FiGrid, FiAlertTriangle,
   FiCalendar, FiFolder, FiRepeat, FiBarChart2,
   FiPlus, FiLogOut, FiX, FiSettings, FiHelpCircle,
-  FiCpu // AI icon
+  FiCpu, FiBookOpen, FiUsers, FiMonitor, FiPlayCircle,
+  FiMessageSquare, FiServer, FiBox, FiVideo, FiUserCheck
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 
 const MENU = [
-  { key: 'home',       icon: FiHome,          label: 'Home' },
-  { key: 'mytasks',    icon: FiGrid,          label: 'My Tasks' },
-  { key: 'priorities', icon: FiAlertTriangle, label: 'Priorities' },
-  { key: 'aitasks',    icon: FiCpu,           label: 'AI Task Generator' }, // NEW ITEM
-  { key: 'calendar',   icon: FiCalendar,      label: 'My Calendar' },
-  { key: 'projects',   icon: FiFolder,        label: 'Projects' },
-  { key: 'routine',    icon: FiRepeat,        label: 'Routine Tracker' },
-  { key: 'progress',   icon: FiBarChart2,     label: 'My Progress' },
-  { key: 'settings',   icon: FiSettings,      label: 'Settings' },
-  { key: 'support',    icon: FiHelpCircle,    label: 'Support' },
+  { key: 'home',              icon: FiHome,           label: 'Home' },
+  { key: 'planning',          icon: FiCalendar,       label: 'My Planning' },
+  { key: 'projects',          icon: FiFolder,         label: 'Projects' },
+  { key: 'qa-reviews',        icon: FiAlertTriangle,  label: 'QA Reviews I can make' },
+  { key: 'evaluation-quizzes', icon: FiBarChart2,     label: 'Evaluation quizzes' },
+  { key: 'my-courses',        icon: FiBookOpen,       label: 'My courses' },
+  { key: 'concepts',          icon: FiCpu,            label: 'Concepts' },
+  { key: 'conference-rooms',  icon: FiMessageSquare,  label: 'Conference rooms' },
+  { key: 'servers',           icon: FiServer,         label: 'Servers' },
+  { key: 'sandboxes',         icon: FiBox,            label: 'Sandboxes' },
+  { key: 'video-on-demand',   icon: FiVideo,          label: 'Video on demand' },
+  { key: 'peers',             icon: FiUsers,          label: 'Peers' },
 ];
 
 export default function Sidebar({ currentView, onViewChange, onAddTask, onClose }) {

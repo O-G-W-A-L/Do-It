@@ -6,7 +6,7 @@ import { CourseProvider } from './contexts/CourseContext';
 import { PaymentProvider } from './contexts/PaymentContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { RoutineProvider } from './contexts/RoutineContext';
+
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -40,8 +40,7 @@ export default function App() {
             <PaymentProvider>
               <AnalyticsProvider>
                 <NotificationProvider>
-                  <RoutineProvider>
-                    <Routes>
+                  <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/register" element={<RegisterPage />} />
@@ -93,7 +92,6 @@ export default function App() {
                         }
                       />
                     </Routes>
-                  </RoutineProvider>
                 </NotificationProvider>
               </AnalyticsProvider>
             </PaymentProvider>
