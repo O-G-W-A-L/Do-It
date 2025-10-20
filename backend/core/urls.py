@@ -5,7 +5,15 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),
+
+    # API endpoints organized by domain
+    path('api/auth/', include('users.urls')),      # Authentication & user management
+    path('api/courses/', include('courses.urls')), # Course content & enrollment
+    path('api/progress/', include('progress.urls')), # Learning progress & analytics
+
+    # Legacy dj-rest-auth endpoints (for compatibility)
+    path('api/auth/', include('dj_rest_auth.urls')),
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
 ]
 
 # Serve media files in development

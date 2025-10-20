@@ -34,8 +34,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
 
-    # Local
-    'api',
+    # Local Apps
+    'users',
+    'courses',
+    'progress',
 
     'rest_framework.authtoken',
     'dj_rest_auth',
