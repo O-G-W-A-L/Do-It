@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Users, ChevronRight, X, Bell, Grid3X3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 export default function CourseLanding() {
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -316,6 +317,8 @@ export default function CourseLanding() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }
