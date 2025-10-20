@@ -29,6 +29,7 @@ class PaymentTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for payment transaction history (read-only for users)
     """
+    queryset = PaymentTransaction.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = PaymentTransactionSerializer
 
@@ -54,6 +55,7 @@ class UserSubscriptionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for user subscription management
     """
+    queryset = UserSubscription.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = UserSubscriptionSerializer
 
@@ -85,6 +87,7 @@ class CouponViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for coupon information (read-only)
     """
+    queryset = Coupon.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = CouponSerializer
 
@@ -97,6 +100,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for invoice access
     """
+    queryset = Invoice.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = InvoiceSerializer
 
@@ -113,6 +117,7 @@ class RefundViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for refund history
     """
+    queryset = Refund.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = RefundSerializer
 
@@ -151,15 +156,7 @@ def create_course_purchase(request):
 
             amount -= discount_amount
 
-            # Record coupon usage
-            CouponUsage.objects.create(
-                coupon=coupon,
-                user=request.user,
-                transaction=None,  # Will be set after transaction creation
-                discount_amount=discount_amount
-            )
-
-        # Create payment transaction
+        # Create payment transaction first
         transaction = PaymentTransaction.objects.create(
             user=request.user,
             amount=amount,
@@ -169,16 +166,14 @@ def create_course_purchase(request):
             status='pending'
         )
 
-        # Update coupon usage with transaction
+        # Record coupon usage with transaction
         if coupon_code:
-            coupon_usage = CouponUsage.objects.filter(
-                coupon__code=coupon_code,
+            CouponUsage.objects.create(
+                coupon=coupon,
                 user=request.user,
-                transaction__isnull=True
-            ).first()
-            if coupon_usage:
-                coupon_usage.transaction = transaction
-                coupon_usage.save()
+                transaction=transaction,
+                discount_amount=discount_amount
+            )
 
         # Create invoice
         Invoice.objects.create(
@@ -225,15 +220,7 @@ def create_subscription_purchase(request):
 
             amount -= discount_amount
 
-            # Record coupon usage
-            CouponUsage.objects.create(
-                coupon=coupon,
-                user=request.user,
-                transaction=None,  # Will be set after transaction creation
-                discount_amount=discount_amount
-            )
-
-        # Create payment transaction
+        # Create payment transaction first
         transaction = PaymentTransaction.objects.create(
             user=request.user,
             amount=amount,
@@ -243,16 +230,14 @@ def create_subscription_purchase(request):
             status='pending'
         )
 
-        # Update coupon usage with transaction
+        # Record coupon usage with transaction
         if coupon_code:
-            coupon_usage = CouponUsage.objects.filter(
-                coupon__code=coupon_code,
+            CouponUsage.objects.create(
+                coupon=coupon,
                 user=request.user,
-                transaction__isnull=True
-            ).first()
-            if coupon_usage:
-                coupon_usage.transaction = transaction
-                coupon_usage.save()
+                transaction=transaction,
+                discount_amount=discount_amount
+            )
 
         # Create invoice
         Invoice.objects.create(
