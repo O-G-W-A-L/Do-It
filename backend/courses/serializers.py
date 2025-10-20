@@ -140,10 +140,10 @@ class CourseListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'slug', 'short_description', 'thumbnail',
+            'id', 'title', 'slug', 'description', 'short_description', 'thumbnail',
             'instructor_name', 'level', 'is_free', 'price',
             'duration_weeks', 'enrollment_count', 'average_rating',
-            'status', 'published_at'
+            'status', 'published_at', 'created_at'
         ]
 
     def get_average_rating(self, obj):
