@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Users, ChevronRight, X, Bell, Grid3X3 } from 'lucide-react';
+import { Calendar, Clock, Users, ChevronRight, X, Bell, Grid3X3, User, Settings, HelpCircle, Moon, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import Footer from '../components/Footer';
 
 export default function CourseLanding() {
+  const { user, logout } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const getUserInitials = (username) => {
+    if (!username) return 'U';
+    return username.split(' ').map(name => name[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getFirstName = (username) => {
+    if (!username) return 'User';
+    return username.split(' ')[0];
+  };
 
   const enrolledCourses = [
     {
@@ -105,14 +118,63 @@ export default function CourseLanding() {
               <Grid3X3 className="w-4 h-4" />
               Workspace
             </Link>
-            <div className="flex items-center gap-2 text-gray-600 text-sm">
-              <span className="px-3 py-1 bg-brand-blue/10 text-brand-blue rounded-full">2600 points</span>
-            </div>
             <button className="text-gray-600 hover:text-brand-blue">
               <Bell className="w-5 h-5" />
             </button>
-            <div className="w-9 h-9 rounded-full bg-brand-blue flex items-center justify-center text-white font-semibold text-sm">
-              JA
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-9 h-9 rounded-full bg-brand-blue flex items-center justify-center text-white font-semibold text-sm hover:bg-brand-blue-light transition-colors"
+              >
+                {getUserInitials(user?.username)}
+              </button>
+
+              {/* User Menu Dropdown */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900">{user?.username}</p>
+                    <p className="text-sm text-gray-500">{user?.email}</p>
+                  </div>
+
+                  <div className="py-1">
+                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                      <User className="w-4 h-4 mr-3" />
+                      Manage your account
+                    </button>
+
+                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                      <Moon className="w-4 h-4 mr-3" />
+                      Dark Theme
+                    </button>
+
+                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                      <User className="w-4 h-4 mr-3" />
+                      View Profile
+                    </button>
+
+                    <Link to="/settings" className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                      <Settings className="w-4 h-4 mr-3" />
+                      Settings
+                    </Link>
+
+                    <Link to="/support" className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                      <HelpCircle className="w-4 h-4 mr-3" />
+                      Support
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-gray-200 py-1">
+                    <button
+                      onClick={logout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -134,7 +196,7 @@ export default function CourseLanding() {
       {/* Greeting */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello Jonathan Amos!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello {getFirstName(user?.username)}!</h2>
           <p className="text-gray-600">Ready to level up? Your next course is waiting.</p>
         </div>
       </section>
