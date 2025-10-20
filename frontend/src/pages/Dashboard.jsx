@@ -329,15 +329,15 @@ export default function CourseLanding() {
                 ({showAllCourses ? availableCourses.length : Math.min(6, availableCourses.length)} of {availableCourses.length} courses)
               </span>
             </h2>
-            {availableCourses.length > 6 && !showAllCourses && (
+            {availableCourses.length > 6 && (
               <button
-                onClick={() => setShowAllCourses(true)}
+                onClick={() => setShowAllCourses(!showAllCourses)}
                 className="text-sm text-brand-blue hover:text-brand-blue-light font-medium flex items-center gap-1"
               >
-                View All <ChevronRight className="w-4 h-4" />
+                {showAllCourses ? 'Show Less' : 'View All'} <ChevronRight className={`w-4 h-4 transition-transform ${showAllCourses ? 'rotate-90' : ''}`} />
               </button>
             )}
-            {showAllCourses && (
+            {availableCourses.length <= 6 && (
               <div className="text-sm text-gray-500 font-medium">
                 All courses shown
               </div>
