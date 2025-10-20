@@ -62,12 +62,12 @@ export function CourseProvider({ children }) {
 
   // Course filtering and search
   const filteredCourses = React.useMemo(() => {
-    let filtered = coursesHook.courses;
+    let filtered = Array.isArray(coursesHook.courses) ? coursesHook.courses : [];
 
     if (courseFilters.search) {
       filtered = filtered.filter(course =>
-        course.title.toLowerCase().includes(courseFilters.search.toLowerCase()) ||
-        course.description.toLowerCase().includes(courseFilters.search.toLowerCase())
+        course.title?.toLowerCase().includes(courseFilters.search.toLowerCase()) ||
+        course.description?.toLowerCase().includes(courseFilters.search.toLowerCase())
       );
     }
 
@@ -83,9 +83,9 @@ export function CourseProvider({ children }) {
     filtered.sort((a, b) => {
       switch (courseFilters.sort) {
         case 'newest':
-          return new Date(b.created_at) - new Date(a.created_at);
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
         case 'oldest':
-          return new Date(a.created_at) - new Date(b.created_at);
+          return new Date(a.created_at || 0) - new Date(b.created_at || 0);
         case 'popular':
           return (b.enrollment_count || 0) - (a.enrollment_count || 0);
         case 'rating':

@@ -2,6 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CourseProvider } from './contexts/CourseContext';
+import { PaymentProvider } from './contexts/PaymentContext';
+import { AnalyticsProvider } from './contexts/AnalyticsContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { RoutineProvider } from './contexts/RoutineContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -32,60 +36,68 @@ export default function App() {
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Router>
         <AuthProvider>
-          <RoutineProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+          <CourseProvider>
+            <PaymentProvider>
+              <AnalyticsProvider>
+                <NotificationProvider>
+                  <RoutineProvider>
+                    <Routes>
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/register" element={<RegisterPage />} />
 
-              <Route
-                path="/dashboard"
-                element={
-                  <Protected>
-                    <Dashboard />
-                  </Protected>
-                }
-              />
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <Protected>
+                            <Dashboard />
+                          </Protected>
+                        }
+                      />
 
-              <Route
-                path="/hub"
-                element={
-                  <Protected>
-                    <Hub />
-                  </Protected>
-                }
-              />
+                      <Route
+                        path="/hub"
+                        element={
+                          <Protected>
+                            <Hub />
+                          </Protected>
+                        }
+                      />
 
-              <Route path="/verify-email/:key" element={<EmailVerification />} />
+                      <Route path="/verify-email/:key" element={<EmailVerification />} />
 
-              <Route
-                path="/profile"
-                element={
-                  <Protected>
-                    <ProfilePage />
-                  </Protected>
-                }
-              />
+                      <Route
+                        path="/profile"
+                        element={
+                          <Protected>
+                            <ProfilePage />
+                          </Protected>
+                        }
+                      />
 
-              <Route
-                path="/settings"
-                element={
-                  <Protected>
-                    <Settings />
-                  </Protected>
-                }
-              />
+                      <Route
+                        path="/settings"
+                        element={
+                          <Protected>
+                            <Settings />
+                          </Protected>
+                        }
+                      />
 
-              <Route
-                path="/support"
-                element={
-                  <Protected>
-                    <Support />
-                  </Protected>
-                }
-              />
-            </Routes>
-          </RoutineProvider>
+                      <Route
+                        path="/support"
+                        element={
+                          <Protected>
+                            <Support />
+                          </Protected>
+                        }
+                      />
+                    </Routes>
+                  </RoutineProvider>
+                </NotificationProvider>
+              </AnalyticsProvider>
+            </PaymentProvider>
+          </CourseProvider>
         </AuthProvider>
       </Router>
     </GoogleOAuthProvider>

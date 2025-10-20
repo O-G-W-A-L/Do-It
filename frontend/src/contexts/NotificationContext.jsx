@@ -26,8 +26,8 @@ export function NotificationProvider({ children }) {
           loadNotificationSettings()
         ]);
 
-        // Subscribe to real-time notifications
-        notificationsHook.subscribeToRealTimeNotifications(handleNewNotification);
+        // Note: Real-time notifications disabled - backend doesn't have stream endpoint
+        // TODO: Implement WebSocket or polling-based real-time notifications
       } catch (error) {
         console.error('Failed to load notification data:', error);
       }
@@ -35,10 +35,7 @@ export function NotificationProvider({ children }) {
 
     loadInitialData();
 
-    // Cleanup on unmount
-    return () => {
-      notificationsHook.unsubscribeFromRealTimeNotifications();
-    };
+    // No cleanup needed for now
   }, []);
 
   // Load notification settings

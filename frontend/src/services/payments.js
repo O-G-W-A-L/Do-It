@@ -309,7 +309,7 @@ export const paymentsService = {
   // Pricing plans
   async getPricingPlans() {
     try {
-      const response = await api.get('/api/payments/plans/');
+      const response = await api.get('/api/payments/subscription-plans/');
       return {
         success: true,
         data: response.data
@@ -324,7 +324,7 @@ export const paymentsService = {
 
   async getPlan(planId) {
     try {
-      const response = await api.get(`/api/payments/plans/${planId}/`);
+      const response = await api.get(`/api/payments/subscription-plans/${planId}/`);
       return {
         success: true,
         data: response.data
