@@ -1,0 +1,214 @@
+import React, { useState, useEffect } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { Upload, Video, FileText, HelpCircle, Save } from 'lucide-react';
+import Button from '../ui/Button';
+
+const LessonContentEditor = ({ lesson, onSave, onChange }) => {
+  const [content, setContent] = useState(lesson?.content || '');
+  const [videoUrl, setVideoUrl] = useState(lesson?.video_url || '');
+  const [attachments, setAttachments] = useState(lesson?.attachments || []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setContent(lesson?.content || '');
+    setVideoUrl(lesson?.video_url || '');
+    setAttachments(lesson?.attachments || []);
+  }, [lesson]);
+
+  const handleContentChange = (value) => {
+    setContent(value);
+    onChange?.({
+      content: value,
+      video_url: videoUrl,
+      attachments
+    });
+  };
+
+  const handleVideoUrlChange = (url) => {
+    setVideoUrl(url);
+    onChange?.({
+      content,
+      video_url: url,
+      attachments
+    });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave?.({
+        content,
+        video_url: videoUrl,
+        attachments
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      ['link', 'image'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'indent', 'link', 'image'
+  ];
+
+  const renderContentEditor = () => {
+    switch (lesson?.content_type) {
+      case 'video':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Video URL
+              </label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => handleVideoUrlChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Supported: YouTube, Vimeo, or direct video URLs
+              </p>
+            </div>
+
+            {videoUrl && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Video Preview</h4>
+                <div className="aspect-video bg-gray-100 rounded flex items-center justify-center">
+                  <Video className="w-12 h-12 text-gray-400" />
+                  <span className="ml-2 text-gray-500">Video will display here</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Video Description
+              </label>
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={handleContentChange}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Add video description, transcript, or additional notes..."
+              />
+            </div>
+          </div>
+        );
+
+      case 'quiz':
+        return (
+          <div className="space-y-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <HelpCircle className="w-5 h-5 text-blue-600" />
+                <h4 className="text-sm font-medium text-gray-700">Quiz Builder</h4>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Quiz functionality will be implemented here. For now, add quiz instructions:
+              </p>
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={handleContentChange}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Add quiz instructions, questions will be created separately..."
+              />
+            </div>
+          </div>
+        );
+
+      case 'assignment':
+        return (
+          <div className="space-y-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-5 h-5 text-green-600" />
+                <h4 className="text-sm font-medium text-gray-700">Assignment Details</h4>
+              </div>
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={handleContentChange}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Describe the assignment requirements, objectives, and submission guidelines..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Attachments (Optional)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Drop files here or click to upload</p>
+                <p className="text-xs text-gray-400 mt-1">PDF, DOC, Images up to 10MB</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      default: // text
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lesson Content
+              </label>
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={handleContentChange}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Write your lesson content here..."
+                className="bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Attachments (Optional)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Drop files here or click to upload</p>
+                <p className="text-xs text-gray-400 mt-1">PDF, DOC, Images up to 10MB</p>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {renderContentEditor()}
+
+      {/* Save Button */}
+      <div className="flex justify-end pt-4 border-t border-gray-200">
+        <Button onClick={handleSave} loading={saving} icon={Save}>
+          {saving ? 'Saving...' : 'Save Content'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default LessonContentEditor;

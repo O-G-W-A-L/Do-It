@@ -11,10 +11,13 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FilePlus
 } from 'lucide-react';
 import Button from '../ui/Button';
 import { coursesService } from '../../services/courses';
+import CourseCreationModal from './CourseCreationModal';
+import LessonContentEditor from './LessonContentEditor';
 
 const CourseBuilder = ({ onSave, onPublish }) => {
   const [courses, setCourses] = useState([]);
@@ -34,6 +37,9 @@ const CourseBuilder = ({ onSave, onPublish }) => {
   const [coursesError, setCoursesError] = useState(null);
   const [modulesError, setModulesError] = useState(null);
   const [saveError, setSaveError] = useState(null);
+
+  // Modal states
+  const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
 
   // Load courses on mount
   useEffect(() => {
@@ -225,9 +231,19 @@ const CourseBuilder = ({ onSave, onPublish }) => {
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Course Selector */}
         <div className="p-4 border-b border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Course
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Select Course
+            </label>
+            <Button
+              onClick={() => setShowCreateCourseModal(true)}
+              size="sm"
+              variant="outline"
+              icon={FilePlus}
+            >
+              Create Course
+            </Button>
+          </div>
           {loadingCourses ? (
             <div className="flex items-center gap-2 text-gray-500">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -384,60 +400,24 @@ const CourseBuilder = ({ onSave, onPublish }) => {
             </div>
 
             {/* Lesson Content Editor */}
-            <div className="p-6 h-full">
-              <div className="space-y-6">
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lesson Title
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedLesson.title}
-                    onChange={(e) => updateLesson(
-                      modules.find(m => m.lessons.some(l => l.id === selectedLesson.id))?.id,
-                      selectedLesson.id,
-                      { title: e.target.value }
-                    )}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Content Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content Type
-                  </label>
-                  <select
-                    value={selectedLesson.type}
-                    onChange={(e) => updateLesson(
-                      modules.find(m => m.lessons.some(l => l.id === selectedLesson.id))?.id,
-                      selectedLesson.id,
-                      { type: e.target.value }
-                    )}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="text">Text Content</option>
-                    <option value="video">Video</option>
-                    <option value="quiz">Quiz</option>
-                    <option value="assignment">Assignment</option>
-                  </select>
-                </div>
-
-                {/* Content Area - Placeholder for now */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <Edit3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Content Editor
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Rich text editor and media uploader will be implemented here
-                  </p>
-                  <Button variant="outline">
-                    Add Content
-                  </Button>
-                </div>
-              </div>
+            <div className="flex-1 overflow-y-auto">
+              <LessonContentEditor
+                lesson={selectedLesson}
+                onSave={async (contentData) => {
+                  // Save lesson content to backend
+                  const moduleId = modules.find(m => m.lessons.some(l => l.id === selectedLesson.id))?.id;
+                  if (moduleId) {
+                    await updateLesson(moduleId, selectedLesson.id, contentData);
+                  }
+                }}
+                onChange={(contentData) => {
+                  // Update local state
+                  const moduleId = modules.find(m => m.lessons.some(l => l.id === selectedLesson.id))?.id;
+                  if (moduleId) {
+                    updateLesson(moduleId, selectedLesson.id, contentData);
+                  }
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -472,6 +452,17 @@ const CourseBuilder = ({ onSave, onPublish }) => {
           </div>
         </div>
       </div>
+
+      {/* Course Creation Modal */}
+      <CourseCreationModal
+        isOpen={showCreateCourseModal}
+        onClose={() => setShowCreateCourseModal(false)}
+        onCourseCreated={(newCourse) => {
+          setCourses([...courses, newCourse]);
+          setSelectedCourse(newCourse);
+          setShowCreateCourseModal(false);
+        }}
+      />
     </div>
   );
 };
