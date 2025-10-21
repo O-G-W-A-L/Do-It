@@ -13,6 +13,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+
 export default function TopBar({ onLogout, onMenuToggle }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -165,6 +166,8 @@ export default function TopBar({ onLogout, onMenuToggle }) {
                     >
                       <FiSettings className="mr-3 text-indigo-600 dark:text-indigo-400" /> Settings
                     </Link>
+
+
 
                     <Link
                       to="/support"

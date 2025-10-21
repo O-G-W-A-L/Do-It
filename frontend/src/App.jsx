@@ -16,6 +16,10 @@ import EmailVerification from './pages/EmailVerification';
 import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
+import AcceptInvitation from './pages/AcceptInvitation';
+import AdminPortal from './pages/AdminPortal';
+
+
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -64,6 +68,16 @@ export default function App() {
                       />
 
                       <Route path="/verify-email/:key" element={<EmailVerification />} />
+                      <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+
+                      <Route
+                        path="/admin"
+                        element={
+                          <Protected>
+                            <AdminPortal />
+                          </Protected>
+                        }
+                      />
 
                       <Route
                         path="/profile"
@@ -91,6 +105,8 @@ export default function App() {
                           </Protected>
                         }
                       />
+
+
                     </Routes>
                 </NotificationProvider>
               </AnalyticsProvider>

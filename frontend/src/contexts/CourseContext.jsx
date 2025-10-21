@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useCourses } from '../hooks/useCourses.js';
 import { useEnrollments } from '../hooks/useEnrollments.js';
+import { useAuth } from './AuthContext';
 
 const CourseContext = createContext();
 
 export function CourseProvider({ children }) {
+  const { user } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseFilters, setCourseFilters] = useState({
     category: '',
@@ -12,6 +14,7 @@ export function CourseProvider({ children }) {
     search: '',
     sort: 'newest'
   });
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   // Use the hooks
   const coursesHook = useCourses();
@@ -40,6 +43,40 @@ export function CourseProvider({ children }) {
 
     loadInitialData();
   }, []);
+
+  // Detect user changes and refresh enrollment data
+  useEffect(() => {
+    const userId = user?.id || null;
+
+    // If user changed, clear old data and fetch new enrollment data
+    if (currentUserId !== userId) {
+      if (currentUserId !== null) {
+        // User changed - clear old enrollment data
+        enrollmentsHook.setEnrollments([]);
+      }
+
+      setCurrentUserId(userId);
+
+      // Fetch fresh enrollment data for new user
+      if (userId) {
+        enrollmentsHook.fetchEnrollments();
+      }
+    }
+  }, [user?.id, currentUserId, enrollmentsHook]);
+
+  // Provide clearData function for AuthContext logout
+  useEffect(() => {
+    window.courseContextClearData = () => {
+      enrollmentsHook.setEnrollments([]);
+      coursesHook.setCourses([]);
+      setSelectedCourse(null);
+      setCurrentUserId(null);
+    };
+
+    return () => {
+      delete window.courseContextClearData;
+    };
+  }, [enrollmentsHook, coursesHook]);
 
   // Enhanced course operations
   const enrollInCourse = useCallback(async (courseId, enrollmentData = {}) => {

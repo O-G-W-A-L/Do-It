@@ -6,6 +6,7 @@ import { useCourseContext } from '../contexts/CourseContext';
 import { useAnalyticsContext } from '../contexts/AnalyticsContext';
 import { usePaymentContext } from '../contexts/PaymentContext';
 import { useNotificationContext } from '../contexts/NotificationContext';
+
 import Footer from '../components/Footer';
 
 export default function CourseLanding() {
@@ -170,8 +171,13 @@ export default function CourseLanding() {
       {/* Greeting */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello {getFirstName(user?.username)}!</h2>
-          <p className="text-gray-600">Ready to level up? Your next course is waiting.</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello {getFirstName(user?.username)}!</h2>
+              <p className="text-gray-600">Ready to level up? Your next course is waiting.</p>
+            </div>
+
+          </div>
         </div>
       </section>
 

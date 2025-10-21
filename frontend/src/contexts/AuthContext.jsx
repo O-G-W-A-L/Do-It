@@ -35,6 +35,27 @@ export function AuthProvider({ children }) {
     fetchUser();
   }, []);
 
+  // Role-based redirect after login (only on auth state changes, not navigation)
+  useEffect(() => {
+    if (user && !loading) {
+      const userRole = user.profile?.role;
+      const currentPath = window.location.pathname;
+
+      // Only redirect if we're on login/register pages, root, or accept-invitation
+      const authPages = ['/', '/login', '/register', '/accept-invitation'];
+      const shouldRedirect = authPages.some(page =>
+        currentPath === page || currentPath.startsWith('/accept-invitation/')
+      );
+
+      if (shouldRedirect) {
+        const redirectPath = (userRole === 'admin' || userRole === 'instructor')
+          ? '/admin'
+          : '/dashboard';
+        navigate(redirectPath, { replace: true });
+      }
+    }
+  }, [user, loading, navigate]);
+
   const login = async (username, password) => {
     setError(null);
     try {
@@ -42,8 +63,9 @@ export function AuthProvider({ children }) {
       if (result.success) {
         localStorage.setItem('access_token', result.data.access);
         localStorage.setItem('refresh_token', result.data.refresh);
-        await fetchUser();
-        navigate('/dashboard');
+        await fetchUser(); // This will update the user state
+
+        // Note: Role-based redirect will happen in useEffect below
       } else {
         setError(result.error || 'Login failed');
       }
@@ -126,8 +148,9 @@ export function AuthProvider({ children }) {
       if (result.success) {
         localStorage.setItem('access_token', result.data.access);
         localStorage.setItem('refresh_token', result.data.refresh);
-        await fetchUser();
-        navigate('/dashboard');
+        await fetchUser(); // This will update the user state
+
+        // Note: Role-based redirect will happen in useEffect above
       } else {
         setError(result.error || 'Google login failed');
       }
@@ -140,6 +163,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
+    // Clear any cached enrollment/course data
+    if (window.courseContextClearData) {
+      window.courseContextClearData();
+    }
     navigate('/');
   };
 
