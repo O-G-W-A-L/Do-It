@@ -7,6 +7,7 @@ from .views import (
     register, verify_email, resend_verification,
     password_reset_request, password_reset_confirm,
     get_user_enrollments, UserManagementViewSet, UserMeView,
+    send_admin_invitation, accept_admin_invitation,
 )
 
 router = DefaultRouter()
@@ -35,4 +36,8 @@ urlpatterns = [
 
     # Admin management (router URLs)
     path('management/', include(router.urls)),
+
+    # Admin invitation system
+    path('admin/send-invitation/', send_admin_invitation),
+    path('admin/accept-invitation/<uuid:token>/', accept_admin_invitation),
 ]

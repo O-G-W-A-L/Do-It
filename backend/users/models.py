@@ -29,6 +29,46 @@ class EmailVerification(models.Model):
         return f"EmailVerification(token={self.token}, user={self.user.username})"
 
 
+class AdminInvitation(models.Model):
+    """
+    Magic link invitations for admin/instructor accounts
+    """
+    email = models.EmailField(unique=True)
+    role = models.CharField(
+        max_length=20,
+        choices=[('instructor', 'Instructor'), ('admin', 'Admin')],
+        default='instructor'
+    )
+    invited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_invitations'
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created = models.DateTimeField(auto_now_add=True)
+    expires = models.DateTimeField(default=default_expiry)
+    used = models.BooleanField(default=False)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    def is_valid(self):
+        return not self.used and timezone.now() < self.expires
+
+    def accept(self, user):
+        """Mark invitation as accepted and link to user"""
+        self.used = True
+        self.accepted_at = timezone.now()
+        # Update user's profile role
+        user.profile.role = self.role
+        user.profile.save()
+        self.save()
+
+    def __str__(self):
+        return f"Invitation for {self.email} ({self.role})"
+
+    class Meta:
+        ordering = ['-created']
+
+
 class Profile(models.Model):
     USER_ROLES = [
         ('student', 'Student'),
