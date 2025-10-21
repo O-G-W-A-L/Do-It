@@ -100,7 +100,7 @@ export const coursesService = {
   // Course modules and lessons
   async getCourseModules(courseId) {
     try {
-      const response = await api.get(`/api/courses/${courseId}/modules/`);
+      const response = await api.get(`/api/courses/modules/?course=${courseId}`);
       return {
         success: true,
         data: response.data
@@ -113,9 +113,9 @@ export const coursesService = {
     }
   },
 
-  async createModule(courseId, moduleData) {
+  async createModule(moduleData) {
     try {
-      const response = await api.post(`/api/courses/${courseId}/modules/`, moduleData);
+      const response = await api.post('/api/courses/modules/', moduleData);
       return {
         success: true,
         data: response.data
@@ -128,9 +128,9 @@ export const coursesService = {
     }
   },
 
-  async updateModule(courseId, moduleId, moduleData) {
+  async updateModule(moduleId, moduleData) {
     try {
-      const response = await api.put(`/api/courses/${courseId}/modules/${moduleId}/`, moduleData);
+      const response = await api.put(`/api/courses/modules/${moduleId}/`, moduleData);
       return {
         success: true,
         data: response.data
@@ -143,9 +143,9 @@ export const coursesService = {
     }
   },
 
-  async getModuleLessons(courseId, moduleId) {
+  async getModuleLessons(moduleId) {
     try {
-      const response = await api.get(`/api/courses/${courseId}/modules/${moduleId}/lessons/`);
+      const response = await api.get(`/api/courses/lessons/?module=${moduleId}`);
       return {
         success: true,
         data: response.data
@@ -158,9 +158,9 @@ export const coursesService = {
     }
   },
 
-  async createLesson(courseId, moduleId, lessonData) {
+  async createLesson(lessonData) {
     try {
-      const response = await api.post(`/api/courses/${courseId}/modules/${moduleId}/lessons/`, lessonData);
+      const response = await api.post('/api/courses/lessons/', lessonData);
       return {
         success: true,
         data: response.data
@@ -173,9 +173,9 @@ export const coursesService = {
     }
   },
 
-  async updateLesson(courseId, moduleId, lessonId, lessonData) {
+  async updateLesson(lessonId, lessonData) {
     try {
-      const response = await api.put(`/api/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/`, lessonData);
+      const response = await api.put(`/api/courses/lessons/${lessonId}/`, lessonData);
       return {
         success: true,
         data: response.data
