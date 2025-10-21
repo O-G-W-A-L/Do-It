@@ -104,16 +104,26 @@ const CourseBuilder = ({ onSave, onPublish }) => {
     setExpandedModules(newExpanded);
   };
 
-  const addModule = () => {
-    const newModule = {
-      id: Date.now(),
-      title: 'New Module',
-      description: '',
-      order: modules.length + 1,
-      lessons: []
-    };
-    setModules([...modules, newModule]);
-    setHasUnsavedChanges(true);
+  const addModule = async () => {
+    if (!selectedCourse) return;
+
+    try {
+      const result = await coursesService.createModule({
+        course: selectedCourse.id,
+        title: 'New Module',
+        description: '',
+        order: modules.length + 1
+      });
+
+      if (result.success) {
+        setModules([...modules, result.data]);
+        setHasUnsavedChanges(true);
+      } else {
+        setModulesError(result.error);
+      }
+    } catch (error) {
+      setModulesError('Failed to create module');
+    }
   };
 
   const addLesson = (moduleId) => {
@@ -442,14 +452,86 @@ const CourseBuilder = ({ onSave, onPublish }) => {
           <p className="text-sm text-gray-600">How students will see it</p>
         </div>
 
-        <div className="flex-1 p-4">
-          <div className="bg-gray-100 rounded-lg p-4 min-h-full">
-            <div className="text-center text-gray-500">
-              <Eye className="w-8 h-8 mx-auto mb-2" />
-              <p>Preview will show here</p>
-              <p className="text-xs mt-1">Changes update in real-time</p>
+        <div className="flex-1 overflow-y-auto p-4">
+          {selectedLesson ? (
+            <div className="bg-gray-50 rounded-lg p-4 min-h-full">
+              {/* Lesson Preview Header */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{getLessonTypeIcon(selectedLesson.content_type || selectedLesson.type)}</span>
+                  <h4 className="text-lg font-semibold text-gray-900">{selectedLesson.title}</h4>
+                </div>
+                {selectedLesson.description && (
+                  <p className="text-sm text-gray-600">{selectedLesson.description}</p>
+                )}
+              </div>
+
+              {/* Lesson Content Preview */}
+              <div className="prose prose-sm max-w-none">
+                {selectedLesson.content ? (
+                  <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                ) : selectedLesson.type === 'video' && selectedLesson.video_url ? (
+                  <div className="space-y-4">
+                    <div className="aspect-video bg-gray-200 rounded flex items-center justify-center">
+                      <div className="text-center">
+                        <Video className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Video: {selectedLesson.video_url}</p>
+                      </div>
+                    </div>
+                    {selectedLesson.content && (
+                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                    )}
+                  </div>
+                ) : selectedLesson.type === 'quiz' ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-gray-900">Quiz</span>
+                    </div>
+                    {selectedLesson.content ? (
+                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                    ) : (
+                      <p className="text-gray-600 italic">Quiz instructions will appear here</p>
+                    )}
+                  </div>
+                ) : selectedLesson.type === 'assignment' ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-gray-900">Assignment</span>
+                    </div>
+                    {selectedLesson.content ? (
+                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                    ) : (
+                      <p className="text-gray-600 italic">Assignment details will appear here</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Edit3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Lesson content will appear here</p>
+                    <p className="text-sm text-gray-500 mt-1">Start editing to see the preview</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Lesson {selectedLesson.order || 1}</span>
+                  <span>{selectedLesson.content_type || selectedLesson.type || 'text'}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gray-100 rounded-lg p-4 min-h-full flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <Eye className="w-8 h-8 mx-auto mb-2" />
+                <p>Select a lesson to preview</p>
+                <p className="text-xs mt-1">Changes update in real-time</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
