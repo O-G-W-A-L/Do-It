@@ -203,9 +203,7 @@ const CourseBuilder = ({ onSave, onPublish }) => {
       setSaving(true);
       setSaveError(null);
 
-      const result = await coursesService.updateCourse(selectedCourse.id, {
-        status: 'published'
-      });
+      const result = await coursesService.publishCourse(selectedCourse.id);
 
       if (result.success) {
         // Update local course status

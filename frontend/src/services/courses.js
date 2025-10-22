@@ -85,6 +85,36 @@ export const coursesService = {
     }
   },
 
+  async publishCourse(courseId) {
+    try {
+      const response = await api.post(`/api/courses/courses/${courseId}/publish/`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: apiUtils.handleError(error)
+      };
+    }
+  },
+
+  async unpublishCourse(courseId) {
+    try {
+      const response = await api.post(`/api/courses/courses/${courseId}/unpublish/`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: apiUtils.handleError(error)
+      };
+    }
+  },
+
   async deleteCourse(courseId) {
     try {
       await api.delete(`/api/courses/courses/${courseId}/`);
