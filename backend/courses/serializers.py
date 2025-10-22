@@ -159,10 +159,10 @@ class CourseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'title', 'description', 'level', 'is_free', 'price',
+            'id', 'title', 'description', 'level', 'is_free', 'price',
             'duration_weeks', 'thumbnail'
         ]
-        read_only_fields = ['slug']
+        read_only_fields = ['id', 'slug']
 
     def create(self, validated_data):
         """Create course with instructor assignment"""
