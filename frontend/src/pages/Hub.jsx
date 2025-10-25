@@ -1,18 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Sidebar from '../components/Sidebar';
-import TopBar from '../components/TopBar';
 import Projects from './Projects';
 import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Calendar, BookOpen, FolderOpen, BarChart3,
   ChevronDown, ChevronRight, CheckCircle, PlayCircle,
-  Award, TrendingUp, ChevronUp, ChevronLeft, Loader2, AlertCircle
+  Award, TrendingUp, Loader2, AlertCircle
 } from 'lucide-react';
 
 export default function Hub() {
   const [view, setView] = useState('home');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedReports, setExpandedReports] = useState({});
 
   // Course context for course-specific functionality
@@ -28,7 +25,6 @@ export default function Hub() {
 
   const handleViewChange = useCallback(v => {
     setView(v);
-    setIsSidebarOpen(false);
   }, []);
 
   // Check for course-specific navigation
@@ -402,42 +398,5 @@ export default function Hub() {
     }
   };
 
-  return (
-    <div className="flex h-screen">
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed z-40 h-screen w-64 transform transition-transform duration-200 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:relative md:translate-x-0`}
-      >
-        <Sidebar
-          currentView={view}
-          onViewChange={handleViewChange}
-          onAddTask={() => {}}
-          onClose={() => setIsSidebarOpen(false)}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar
-          title={
-            view === 'my-courses'
-              ? 'My Courses'
-              : view.charAt(0).toUpperCase() + view.slice(1).replace('-', ' ')
-          }
-          onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
-        <main className="p-6 overflow-auto bg-gray-50">{renderMain()}</main>
-      </div>
-    </div>
-  );
+  return renderMain();
 }
