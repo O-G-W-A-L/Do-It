@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CourseProvider } from './contexts/CourseContext';
 import { PaymentProvider } from './contexts/PaymentContext';
@@ -124,6 +125,37 @@ export default function App() {
           </CourseProvider>
         </AuthProvider>
       </Router>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            fontSize: '14px',
+            borderRadius: '8px',
+            zIndex: 9999,
+          },
+          success: {
+            style: {
+              background: '#10B981',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#10B981',
+            },
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#EF4444',
+            },
+          },
+        }}
+      />
     </GoogleOAuthProvider>
   );
 }
