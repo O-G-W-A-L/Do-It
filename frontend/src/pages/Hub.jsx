@@ -95,7 +95,7 @@ export default function Hub() {
                             <p className="text-sm text-gray-600">Module {Math.floor((enrollment.progress_percentage || 0) / 20) + 1} • {(enrollment.progress_percentage || 0)}% complete</p>
                           </div>
                           <button
-                            onClick={() => window.location.href = '/dashboard'}
+                            onClick={() => window.location.href = `/course/${enrollment.course}`}
                             className="text-brand-blue hover:text-brand-blue-light font-medium text-sm"
                           >
                             View
@@ -284,7 +284,7 @@ export default function Hub() {
                             </div>
                           </div>
                           <button
-                            onClick={() => window.location.href = '/dashboard'}
+                            onClick={() => window.location.href = `/course/${enrollment.course}`}
                             className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors"
                           >
                             Continue Learning
