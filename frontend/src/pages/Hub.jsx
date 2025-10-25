@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Calendar, BookOpen, FolderOpen, BarChart3,
   ChevronDown, ChevronRight, CheckCircle, PlayCircle,
-  Award, TrendingUp, ChevronUp, ChevronLeft
+  Award, TrendingUp, ChevronUp, ChevronLeft, Loader2, AlertCircle
 } from 'lucide-react';
 
 export default function Hub() {
@@ -15,9 +15,11 @@ export default function Hub() {
   const [expandedReports, setExpandedReports] = useState({});
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
+  const [courseModules, setCourseModules] = useState({});
+  const [modulesLoading, setModulesLoading] = useState({});
 
   // Course context for course-specific functionality
-  const { enrollments, courses } = useCourseContext();
+  const { enrollments, courses, getCourseModules } = useCourseContext();
   const { user } = useAuth();
 
   const toggleReportExpansion = (courseId) => {
@@ -41,6 +43,33 @@ export default function Hub() {
       setView('my-courses');
     }
   }, []);
+
+  // Load modules for enrolled courses
+  const loadCourseModules = useCallback(async (courseId) => {
+    if (courseModules[courseId] || modulesLoading[courseId]) return;
+
+    setModulesLoading(prev => ({ ...prev, [courseId]: true }));
+    try {
+      const modules = await getCourseModules(courseId);
+      if (modules) {
+        setCourseModules(prev => ({ ...prev, [courseId]: modules }));
+      }
+    } catch (error) {
+      console.error('Failed to load course modules:', error);
+    } finally {
+      setModulesLoading(prev => ({ ...prev, [courseId]: false }));
+    }
+  }, [courseModules, modulesLoading, getCourseModules]);
+
+  // Load modules when enrollments change
+  useEffect(() => {
+    enrollments.forEach(enrollment => {
+      const course = courses.find(c => c.id === enrollment.course);
+      if (course) {
+        loadCourseModules(course.id);
+      }
+    });
+  }, [enrollments, courses, loadCourseModules]);
 
   const renderMain = () => {
     switch (view) {
@@ -87,13 +116,14 @@ export default function Hub() {
                     Current learning
                   </h3>
                   <div className="space-y-3">
-                    {enrollments.slice(0, 3).map(enrollment => {
+                    {Array.isArray(enrollments) && enrollments.slice(0, 3).map(enrollment => {
+                      if (!enrollment || !enrollment.id) return null;
                       const course = courses.find(c => c.id === enrollment.course);
                       return (
                         <div key={enrollment.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">{course?.title || 'Course Title'}</h4>
-                            <p className="text-sm text-gray-600">Module {Math.floor(enrollment.progress_percentage / 20) + 1} • {enrollment.progress_percentage}% complete</p>
+                            <p className="text-sm text-gray-600">Module {Math.floor((enrollment.progress_percentage || 0) / 20) + 1} • {(enrollment.progress_percentage || 0)}% complete</p>
                           </div>
                           <button
                             onClick={() => window.location.href = '/dashboard'}
@@ -104,7 +134,7 @@ export default function Hub() {
                         </div>
                       );
                     })}
-                    {enrollments.length === 0 && (
+                    {(!Array.isArray(enrollments) || enrollments.length === 0) && (
                       <div className="text-center py-8 text-gray-500">
                         <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                         <p>No courses enrolled yet</p>
@@ -120,38 +150,43 @@ export default function Hub() {
                     Current projects
                   </h3>
                   <div className="space-y-4">
-                    {/* Sample project cards - replace with real data later */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-medium text-gray-900">AWS Architecture Project</h4>
-                          <p className="text-sm text-gray-600">Due: Dec 15, 2024</p>
-                        </div>
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
-                          In Progress
-                        </span>
+                    {Array.isArray(enrollments) && enrollments.length > 0 ? (
+                      enrollments.slice(0, 2).map(enrollment => {
+                        if (!enrollment || !enrollment.id) return null;
+                        const course = courses.find(c => c.id === enrollment.course);
+                        return (
+                          <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{course?.title || 'Course Project'}</h4>
+                                <p className="text-sm text-gray-600">Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}</p>
+                              </div>
+                              <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                enrollment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                enrollment.status === 'active' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {enrollment.status === 'completed' ? 'Completed' :
+                                 enrollment.status === 'active' ? 'In Progress' : 'Enrolled'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                              <div
+                                className="bg-brand-blue h-2 rounded-full"
+                                style={{ width: `${enrollment.progress_percentage || 0}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-gray-500">{enrollment.progress_percentage || 0}% complete</p>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <FolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>No active projects</p>
+                        <p className="text-sm mt-1">Enroll in courses to start working on projects</p>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '65%' }}></div>
-                      </div>
-                      <p className="text-xs text-gray-500">65% complete</p>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-medium text-gray-900">React Component Library</h4>
-                          <p className="text-sm text-gray-600">Due: Dec 20, 2024</p>
-                        </div>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                          Not Started
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                      </div>
-                      <p className="text-xs text-gray-500">0% complete</p>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -166,7 +201,8 @@ export default function Hub() {
                   </div>
 
                   <div className="space-y-4">
-                    {enrollments.slice(0, 2).map(enrollment => {
+                    {Array.isArray(enrollments) && enrollments.slice(0, 2).map(enrollment => {
+                      if (!enrollment || !enrollment.id) return null;
                       const course = courses.find(c => c.id === enrollment.course);
                       const isExpanded = expandedReports[enrollment.id];
 
@@ -180,7 +216,7 @@ export default function Hub() {
                                   ✓ Validated
                                 </span>
                               </div>
-                              <p className="text-lg font-bold text-gray-900">{enrollment.progress_percentage}%</p>
+                              <p className="text-lg font-bold text-gray-900">{enrollment.progress_percentage || 0}%</p>
                             </div>
                             <button
                               onClick={() => toggleReportExpansion(enrollment.id)}
@@ -192,7 +228,7 @@ export default function Hub() {
 
                           {isExpanded && (
                             <div className="space-y-3 pt-3 border-t border-gray-200">
-                              {/* Monthly breakdown - sample data */}
+
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">October 2024</span>
                                 <div className="flex items-center gap-2">
@@ -208,10 +244,10 @@ export default function Hub() {
                                 <span className="text-sm text-gray-600">November 2024</span>
                                 <div className="flex items-center gap-2">
                                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                                    <div className="bg-brand-blue h-2 rounded-full" style={{ width: `${enrollment.progress_percentage}%` }}></div>
+                                    <div className="bg-brand-blue h-2 rounded-full" style={{ width: `${enrollment.progress_percentage || 0}%` }}></div>
                                   </div>
-                                  <span className="text-sm font-medium">{enrollment.progress_percentage}%</span>
-                                  {enrollment.progress_percentage === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                  <span className="text-sm font-medium">{enrollment.progress_percentage || 0}%</span>
+                                  {(enrollment.progress_percentage || 0) === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
                                 </div>
                               </div>
                             </div>
@@ -220,7 +256,7 @@ export default function Hub() {
                       );
                     })}
 
-                    {enrollments.length === 0 && (
+                    {(!Array.isArray(enrollments) || enrollments.length === 0) && (
                       <div className="text-center py-8 text-gray-500">
                         <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                         <p className="text-sm">No reports available</p>
@@ -250,7 +286,8 @@ export default function Hub() {
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {enrollments.map(enrollment => {
+                  {Array.isArray(enrollments) && enrollments.map(enrollment => {
+                    if (!enrollment || !enrollment.id) return null;
                     const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -267,13 +304,13 @@ export default function Hub() {
                               }`}>
                                 {enrollment.status}
                               </span>
-                              <span>Progress: {Number(enrollment.progress_percentage)}%</span>
+                              <span>Progress: {Number(enrollment.progress_percentage || 0)}%</span>
                               <span>Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-brand-blue h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${enrollment.progress_percentage}%` }}
+                                style={{ width: `${enrollment.progress_percentage || 0}%` }}
                               ></div>
                             </div>
                           </div>
@@ -316,11 +353,12 @@ export default function Hub() {
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent"
                 >
                   <option value="">All Courses</option>
-                  {enrollments.map(enrollment => {
+                  {Array.isArray(enrollments) && enrollments.map(enrollment => {
+                    if (!enrollment || !enrollment.id) return null;
                     const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <option key={enrollment.id} value={enrollment.id}>
-                        {course?.title || 'Course Title'} ({enrollment.progress_percentage}%)
+                        {course?.title || 'Course Title'} ({enrollment.progress_percentage || 0}%)
                       </option>
                     );
                   })}
@@ -341,9 +379,10 @@ export default function Hub() {
             <div className="bg-white rounded-lg p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">My Projects</h2>
               <div className="space-y-4">
-                {enrollments
+                {Array.isArray(enrollments) && enrollments
                   .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
                   .map(enrollment => {
+                    if (!enrollment || !enrollment.id) return null;
                     const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
@@ -367,14 +406,14 @@ export default function Hub() {
                           </div>
                           <div className="text-right">
                             <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
-                              {Number(enrollment.progress_percentage).toFixed(1)}% done
+                              {Number(enrollment.progress_percentage || 0).toFixed(1)}% done
                             </span>
                           </div>
                         </div>
                       </div>
                     );
                   })}
-                {enrollments.length === 0 && (
+                {(!Array.isArray(enrollments) || enrollments.length === 0) && (
                   <div className="text-center py-12 text-gray-500">
                     <FolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p>No projects available</p>
@@ -413,9 +452,10 @@ export default function Hub() {
               </div>
 
               <div className="space-y-3">
-                {enrollments
+                {Array.isArray(enrollments) && enrollments
                   .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
                   .map(enrollment => {
+                    if (!enrollment || !enrollment.id) return null;
                     const course = courses.find(c => c.id === enrollment.course);
                     const isExpanded = expandedModules[enrollment.id];
 
@@ -439,41 +479,52 @@ export default function Hub() {
                             </span>
                           </div>
                           <span className="text-sm text-gray-600">
-                            {enrollment.progress_percentage}% complete
+                            {enrollment.progress_percentage || 0}% complete
                           </span>
                         </button>
 
                         {isExpanded && (
                           <div className="px-4 pb-4 space-y-2">
-                            {/* Sample module items - in real implementation, these would be actual course modules */}
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                              <span className="text-sm font-medium text-gray-900">Module 1: Getting Started</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-200 rounded-full h-2">
-                                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '100%' }}></div>
-                                </div>
-                                <CheckCircle className="w-4 h-4 text-green-500" />
+                            {modulesLoading[course.id] ? (
+                              <div className="flex items-center justify-center p-4">
+                                <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                                <span className="ml-2 text-sm text-gray-500">Loading modules...</span>
                               </div>
-                            </div>
-
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                              <span className="text-sm font-medium text-gray-900">Module 2: Core Concepts</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-200 rounded-full h-2">
-                                  <div className="bg-brand-blue h-2 rounded-full" style={{ width: `${Math.max(0, enrollment.progress_percentage - 20)}%` }}></div>
+                            ) : courseModules[course.id]?.length > 0 ? (
+                              courseModules[course.id].map(module => (
+                                <div key={module.id} className="border border-gray-200 rounded-lg">
+                                  <div className="flex justify-between items-center p-3 bg-gray-50">
+                                    <span className="text-sm font-medium text-gray-900">{module.title}</span>
+                                    <span className="text-xs text-gray-500">{module.lessons_count || 0} lessons</span>
+                                  </div>
+                                  {module.lessons && module.lessons.length > 0 && (
+                                    <div className="px-3 pb-3 space-y-2">
+                                      {module.lessons.map(lesson => (
+                                        <div key={lesson.id} className="flex justify-between items-center p-2 bg-white rounded border">
+                                          <span className="text-xs text-gray-700">{lesson.title}</span>
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                                              <div
+                                                className="bg-brand-blue h-1.5 rounded-full"
+                                                style={{ width: `${Math.min(100, Math.max(0, (enrollment.progress_percentage || 0) - (module.order - 1) * 20))}%` }}
+                                              ></div>
+                                            </div>
+                                            {(enrollment.progress_percentage || 0) >= (module.order * 20) && (
+                                              <CheckCircle className="w-3 h-3 text-green-500" />
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                {enrollment.progress_percentage >= 40 && <CheckCircle className="w-4 h-4 text-green-500" />}
+                              ))
+                            ) : (
+                              <div className="text-center py-4 text-gray-500">
+                                <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                                <p className="text-xs">No modules available</p>
                               </div>
-                            </div>
-
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                              <span className="text-sm font-medium text-gray-900">Module 3: Advanced Topics</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-200 rounded-full h-2">
-                                  <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         )}
                       </div>
