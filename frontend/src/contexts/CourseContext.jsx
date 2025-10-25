@@ -24,45 +24,44 @@ export function CourseProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Initialize courses on mount
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setIsLoading(true);
-      try {
-        // Load courses and enrollments in parallel
-        await Promise.all([
-          coursesHook.fetchCourses(),
-          enrollmentsHook.fetchEnrollments()
-        ]);
-      } catch (err) {
-        setError('Failed to load course data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
-  }, []);
-
-  // Detect user changes and refresh enrollment data
+  // Reactive data loading - only load when user is authenticated
   useEffect(() => {
     const userId = user?.id || null;
 
-    // If user changed, clear old data and fetch new enrollment data
+    // If user changed, clear old data and fetch fresh data
     if (currentUserId !== userId) {
       if (currentUserId !== null) {
-        // User changed - clear old enrollment data
+        // User changed - clear all data
         enrollmentsHook.setEnrollments([]);
+        coursesHook.setCourses([]);
       }
 
       setCurrentUserId(userId);
 
-      // Fetch fresh enrollment data for new user
+      // Only fetch data when we have an authenticated user
       if (userId) {
-        enrollmentsHook.fetchEnrollments();
+        const loadUserData = async () => {
+          setIsLoading(true);
+          try {
+            // Load courses and enrollments in parallel for authenticated user
+            await Promise.all([
+              coursesHook.fetchCourses(),
+              enrollmentsHook.fetchEnrollments()
+            ]);
+          } catch (err) {
+            setError('Failed to load course data');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        loadUserData();
+      } else {
+        // No user - clear loading state
+        setIsLoading(false);
       }
     }
-  }, [user?.id, currentUserId, enrollmentsHook]);
+  }, [user?.id, currentUserId, coursesHook, enrollmentsHook]);
 
   // Provide clearData function for AuthContext logout
   useEffect(() => {
