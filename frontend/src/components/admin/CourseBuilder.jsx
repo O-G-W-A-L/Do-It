@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   BookOpen,
   Plus,
@@ -12,7 +13,10 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
-  FilePlus
+  FilePlus,
+  Video,
+  HelpCircle,
+  FileText
 } from 'lucide-react';
 import Button from '../ui/Button';
 import { coursesService } from '../../services/courses';
@@ -27,6 +31,8 @@ const CourseBuilder = ({ onSave, onPublish }) => {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [expandedModules, setExpandedModules] = useState(new Set());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editingLessonTitle, setEditingLessonTitle] = useState(null);
+  const [lessonTitleInput, setLessonTitleInput] = useState('');
 
   // Loading states
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -107,31 +113,28 @@ const CourseBuilder = ({ onSave, onPublish }) => {
   const addModule = async () => {
     if (!selectedCourse) return;
 
-    try {
-      const result = await coursesService.createModule({
-        course: selectedCourse.id,
-        title: 'New Module',
-        description: '',
-        order: modules.length + 1
-      });
+    // Create temporary module in local state first
+    const tempModule = {
+      id: `temp-${Date.now()}`,
+      title: 'New Module',
+      description: '',
+      order: modules.length + 1,
+      lessons: [],
+      _isNew: true
+    };
 
-      if (result.success) {
-        setModules([...modules, result.data]);
-        setHasUnsavedChanges(true);
-      } else {
-        setModulesError(result.error);
-      }
-    } catch (error) {
-      setModulesError('Failed to create module');
-    }
+    setModules([...modules, tempModule]);
+    setHasUnsavedChanges(true);
   };
 
   const addLesson = (moduleId) => {
     const newLesson = {
-      id: Date.now(),
+      id: `temp-${Date.now()}`,
       title: 'New Lesson',
-      type: 'text',
-      order: modules.find(m => m.id === moduleId)?.lessons.length + 1 || 1
+      content_type: 'text',
+      content: '',
+      order: modules.find(m => m.id === moduleId)?.lessons.length + 1 || 1,
+      _isNew: true
     };
 
     setModules(modules.map(module =>
@@ -163,6 +166,24 @@ const CourseBuilder = ({ onSave, onPublish }) => {
     setHasUnsavedChanges(true);
   };
 
+  const saveLessonContent = async (lessonId, contentData) => {
+    try {
+      const result = await coursesService.updateLesson(lessonId, contentData);
+      if (result.success) {
+        // Update local state with saved data
+        const moduleId = modules.find(m => m.lessons.some(l => l.id === lessonId))?.id;
+        if (moduleId) {
+          updateLesson(moduleId, lessonId, result.data);
+        }
+        return result.data;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      throw new Error('Failed to save lesson content');
+    }
+  };
+
   const deleteModule = (moduleId) => {
     setModules(modules.filter(module => module.id !== moduleId));
     setHasUnsavedChanges(true);
@@ -177,20 +198,208 @@ const CourseBuilder = ({ onSave, onPublish }) => {
     setHasUnsavedChanges(true);
   };
 
+  const startEditingLessonTitle = (lesson) => {
+    setEditingLessonTitle(lesson.id);
+    setLessonTitleInput(lesson.title);
+  };
+
+  const saveLessonTitle = (moduleId, lessonId) => {
+    if (lessonTitleInput.trim() === '') {
+      toast.error('Lesson title cannot be empty');
+      return;
+    }
+
+    updateLesson(moduleId, lessonId, { title: lessonTitleInput.trim() });
+    setEditingLessonTitle(null);
+    setLessonTitleInput('');
+    toast.success('Lesson title updated');
+  };
+
+  const cancelEditingLessonTitle = () => {
+    setEditingLessonTitle(null);
+    setLessonTitleInput('');
+  };
+
   const handleSave = async () => {
     if (!selectedCourse) return;
+
+    const loadingToast = toast.loading('Saving course...');
 
     try {
       setSaving(true);
       setSaveError(null);
 
-      // Save course updates if needed
-      // For now, just mark as saved
-      setHasUnsavedChanges(false);
-      onSave?.();
+      let savedModules = 0;
+      let savedLessons = 0;
+      let errors = [];
+
+      // 1. Save all modified modules
+      for (const module of modules) {
+        try {
+          if (module.id.toString().startsWith('temp-') || module._isNew) {
+            // Validate required fields for new module
+            if (!module.title || module.title.trim() === '') {
+              errors.push(`Module "${module.title || 'Untitled'}" must have a title`);
+              continue;
+            }
+
+            // Create new module
+            const result = await coursesService.createModule({
+              course: selectedCourse.id,
+              title: module.title.trim(),
+              description: module.description || '',
+              order: module.order
+            });
+
+            if (result.success) {
+              // Update local state with real ID from backend
+              module.id = result.data.id;
+              delete module._isNew;
+              savedModules++;
+
+              // 2. Save all lessons for this module
+              for (const lesson of module.lessons) {
+                try {
+                  if (lesson.id.toString().startsWith('temp-') || lesson._isNew) {
+                    // Validate required fields for new lesson
+                    if (!lesson.title || lesson.title.trim() === '') {
+                      errors.push(`Lesson in module "${module.title}" must have a title`);
+                      continue;
+                    }
+
+                    // Create new lesson
+                    const lessonResult = await coursesService.createLesson({
+                      module: module.id,
+                      title: lesson.title.trim(),
+                      content: lesson.content || '',
+                      content_type: lesson.content_type || 'text',
+                      order: lesson.order
+                    });
+
+                    if (lessonResult.success) {
+                      lesson.id = lessonResult.data.id;
+                      delete lesson._isNew;
+                      savedLessons++;
+                    } else {
+                      errors.push(`Failed to save lesson "${lesson.title}": ${lessonResult.error}`);
+                    }
+                  } else {
+                    // Update existing lesson
+                    const lessonResult = await coursesService.updateLesson(lesson.id, {
+                      title: lesson.title || lesson.title,
+                      content: lesson.content || '',
+                      content_type: lesson.content_type || 'text',
+                      order: lesson.order
+                    });
+
+                    if (lessonResult.success) {
+                      savedLessons++;
+                    } else {
+                      errors.push(`Failed to update lesson "${lesson.title}": ${lessonResult.error}`);
+                    }
+                  }
+                } catch (lessonError) {
+                  errors.push(`Error saving lesson "${lesson.title}": ${lessonError.message}`);
+                }
+              }
+            } else {
+              errors.push(`Failed to save module "${module.title}": ${result.error}`);
+            }
+          } else {
+            // Update existing module
+            const result = await coursesService.updateModule(module.id, {
+              title: module.title || module.title,
+              description: module.description || '',
+              order: module.order
+            });
+
+            if (result.success) {
+              savedModules++;
+            } else {
+              errors.push(`Failed to update module "${module.title}": ${result.error}`);
+            }
+
+            // Save lessons for existing modules
+            for (const lesson of module.lessons) {
+              try {
+                if (lesson.id.toString().startsWith('temp-') || lesson._isNew) {
+                  // Validate required fields for new lesson
+                  if (!lesson.title || lesson.title.trim() === '') {
+                    errors.push(`Lesson in module "${module.title}" must have a title`);
+                    continue;
+                  }
+
+                  // Create new lesson
+                  const lessonResult = await coursesService.createLesson({
+                    module: module.id,
+                    title: lesson.title.trim(),
+                    content: lesson.content || '',
+                    content_type: lesson.content_type || 'text',
+                    order: lesson.order
+                  });
+
+                  if (lessonResult.success) {
+                    lesson.id = lessonResult.data.id;
+                    delete lesson._isNew;
+                    savedLessons++;
+                  } else {
+                    errors.push(`Failed to save lesson "${lesson.title}": ${lessonResult.error}`);
+                  }
+                } else {
+                  // Update existing lesson
+                  const lessonResult = await coursesService.updateLesson(lesson.id, {
+                    title: lesson.title || lesson.title,
+                    content: lesson.content || '',
+                    content_type: lesson.content_type || 'text',
+                    order: lesson.order
+                  });
+
+                  if (lessonResult.success) {
+                    savedLessons++;
+                  } else {
+                    errors.push(`Failed to update lesson "${lesson.title}": ${lessonResult.error}`);
+                  }
+                }
+              } catch (lessonError) {
+                errors.push(`Error saving lesson "${lesson.title}": ${lessonError.message}`);
+              }
+            }
+          }
+        } catch (moduleError) {
+          errors.push(`Error saving module "${module.title}": ${moduleError.message}`);
+        }
+      }
+
+      // Reload modules to get fresh data from backend
+      await loadModules(selectedCourse.id);
+
+      // Show results
+      toast.dismiss(loadingToast);
+
+      if (errors.length === 0) {
+        setHasUnsavedChanges(false);
+        toast.success(`Course saved successfully! (${savedModules} modules, ${savedLessons} lessons)`);
+        onSave?.();
+      } else {
+        // Show partial success with errors
+        const errorMessage = errors.length > 3
+          ? `${errors.length} errors occurred. Check details.`
+          : errors.join('\n');
+
+        toast.error(`Saved with errors: ${savedModules} modules, ${savedLessons} lessons`);
+        setSaveError(errorMessage);
+
+        // Still mark as saved if at least something was saved
+        if (savedModules > 0 || savedLessons > 0) {
+          setHasUnsavedChanges(false);
+        }
+      }
 
     } catch (error) {
-      setSaveError('Failed to save changes');
+      toast.dismiss(loadingToast);
+      const errorMsg = error.message || 'Failed to save course';
+      toast.error(errorMsg);
+      setSaveError(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -198,6 +407,14 @@ const CourseBuilder = ({ onSave, onPublish }) => {
 
   const handlePublish = async () => {
     if (!selectedCourse) return;
+
+    // Validate course has description before publishing
+    if (!selectedCourse.description || selectedCourse.description.trim() === '') {
+      toast.error('Course must have a description to be published');
+      return;
+    }
+
+    const loadingToast = toast.loading('Publishing course...');
 
     try {
       setSaving(true);
@@ -213,18 +430,26 @@ const CourseBuilder = ({ onSave, onPublish }) => {
         ));
         setHasUnsavedChanges(false);
         onPublish?.();
+
+        toast.dismiss(loadingToast);
+        toast.success('Course published successfully!');
       } else {
+        toast.dismiss(loadingToast);
+        toast.error(result.error || 'Failed to publish course');
         setSaveError(result.error);
       }
 
     } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to publish course');
       setSaveError('Failed to publish course');
     } finally {
       setSaving(false);
     }
   };
 
-  const getLessonTypeIcon = (type) => {
+  const getLessonTypeIcon = (lesson) => {
+    const type = lesson?.content_type || lesson?.type || 'text';
     switch (type) {
       case 'video': return '🎥';
       case 'quiz': return '📝';
@@ -294,21 +519,46 @@ const CourseBuilder = ({ onSave, onPublish }) => {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Course Structure</h2>
-            {selectedCourse && (
-              <Button
-                onClick={addModule}
-                size="sm"
-                icon={Plus}
-                disabled={loadingModules}
-              >
-                Add Module
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {selectedCourse && (
+                <>
+                  <Button
+                    onClick={handleSave}
+                    size="sm"
+                    icon={Save}
+                    disabled={saving || !hasUnsavedChanges}
+                    loading={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Course'}
+                  </Button>
+                  <Button
+                    onClick={addModule}
+                    size="sm"
+                    icon={Plus}
+                    disabled={loadingModules}
+                  >
+                    Add Module
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
           {modulesError && (
             <div className="mt-2 flex items-center gap-2 text-red-600">
               <AlertCircle className="w-4 h-4" />
               <span className="text-sm">{modulesError}</span>
+            </div>
+          )}
+          {saveError && (
+            <div className="mt-2 flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm">{saveError}</span>
+            </div>
+          )}
+          {hasUnsavedChanges && (
+            <div className="mt-2 flex items-center gap-2 text-amber-600">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm">You have unsaved changes</span>
             </div>
           )}
         </div>
@@ -353,20 +603,70 @@ const CourseBuilder = ({ onSave, onPublish }) => {
                       {module.lessons.map((lesson) => (
                         <div
                           key={lesson.id}
-                          className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setSelectedLesson(lesson)}
+                          className="group flex items-center justify-between p-2 rounded hover:bg-gray-50"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-1">
                             <GripVertical className="w-3 h-3 text-gray-400" />
-                            <span className="text-sm">{getLessonTypeIcon(lesson.type)}</span>
-                            <span className="text-sm text-gray-700">{lesson.title}</span>
+                            <span className="text-sm">{getLessonTypeIcon(lesson)}</span>
+
+                            {editingLessonTitle === lesson.id ? (
+                              <div className="flex items-center gap-2 flex-1">
+                                <input
+                                  type="text"
+                                  value={lessonTitleInput}
+                                  onChange={(e) => setLessonTitleInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      saveLessonTitle(module.id, lesson.id);
+                                    } else if (e.key === 'Escape') {
+                                      cancelEditingLessonTitle();
+                                    }
+                                  }}
+                                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => saveLessonTitle(module.id, lesson.id)}
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  title="Save title"
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={cancelEditingLessonTitle}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  title="Cancel editing"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                className="flex items-center gap-2 flex-1 cursor-pointer"
+                                onClick={() => setSelectedLesson(lesson)}
+                              >
+                                <span className="text-sm text-gray-700 flex-1">{lesson.title}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingLessonTitle(lesson);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Edit title"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
+
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteLesson(module.id, lesson.id);
                             }}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100"
+                            className="p-1 text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Delete lesson"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -398,10 +698,10 @@ const CourseBuilder = ({ onSave, onPublish }) => {
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{getLessonTypeIcon(selectedLesson.type)}</span>
+                  <span className="text-lg">{getLessonTypeIcon(selectedLesson)}</span>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{selectedLesson.title}</h3>
-                    <p className="text-sm text-gray-600 capitalize">{selectedLesson.type} Lesson</p>
+                    <p className="text-sm text-gray-600 capitalize">{(selectedLesson.content_type || selectedLesson.type || 'text')} Lesson</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -420,10 +720,11 @@ const CourseBuilder = ({ onSave, onPublish }) => {
               <LessonContentEditor
                 lesson={selectedLesson}
                 onSave={async (contentData) => {
-                  // Save lesson content to backend
-                  const moduleId = modules.find(m => m.lessons.some(l => l.id === selectedLesson.id))?.id;
-                  if (moduleId) {
-                    await updateLesson(moduleId, selectedLesson.id, contentData);
+                  try {
+                    await saveLessonContent(selectedLesson.id, contentData);
+                    toast.success('Lesson saved successfully!');
+                  } catch (error) {
+                    toast.error('Failed to save lesson');
                   }
                 }}
                 onChange={(contentData) => {
@@ -478,7 +779,7 @@ const CourseBuilder = ({ onSave, onPublish }) => {
                 <div className="prose prose-sm max-w-none">
                   {currentLesson.content ? (
                     <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                  ) : currentLesson.type === 'video' && currentLesson.video_url ? (
+                  ) : (currentLesson.content_type === 'video' || currentLesson.type === 'video') && currentLesson.video_url ? (
                     <div className="space-y-4">
                       <div className="aspect-video bg-gray-200 rounded flex items-center justify-center">
                         <div className="text-center">
@@ -490,7 +791,7 @@ const CourseBuilder = ({ onSave, onPublish }) => {
                         <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
                       )}
                     </div>
-                  ) : currentLesson.type === 'quiz' ? (
+                  ) : (currentLesson.content_type === 'quiz' || currentLesson.type === 'quiz') ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <HelpCircle className="w-5 h-5 text-blue-600" />
@@ -502,7 +803,7 @@ const CourseBuilder = ({ onSave, onPublish }) => {
                         <p className="text-gray-600 italic">Quiz instructions will appear here</p>
                       )}
                     </div>
-                  ) : currentLesson.type === 'assignment' ? (
+                  ) : (currentLesson.content_type === 'assignment' || currentLesson.type === 'assignment') ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <FileText className="w-5 h-5 text-green-600" />
