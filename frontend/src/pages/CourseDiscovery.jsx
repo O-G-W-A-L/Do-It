@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesService } from '../services/courses';
 import {
@@ -95,6 +96,8 @@ export default function CourseDiscovery() {
       return;
     }
 
+    const loadingToast = toast.loading('Enrolling in course...');
+
     try {
       const result = await coursesService.enrollInCourse(courseId);
       if (result.success) {
@@ -104,12 +107,16 @@ export default function CourseDiscovery() {
             ? { ...course, enrollment_count: (course.enrollment_count || 0) + 1 }
             : course
         ));
-        // Could show success message or redirect to course
+
+        toast.dismiss(loadingToast);
+        toast.success('Successfully enrolled in course!');
       } else {
-        alert(result.error || 'Failed to enroll in course');
+        toast.dismiss(loadingToast);
+        toast.error(result.error || 'Failed to enroll in course');
       }
     } catch (error) {
-      alert('Failed to enroll in course');
+      toast.dismiss(loadingToast);
+      toast.error('Failed to enroll in course');
     }
   };
 
