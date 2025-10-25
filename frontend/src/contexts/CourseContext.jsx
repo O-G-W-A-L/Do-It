@@ -138,11 +138,13 @@ export function CourseProvider({ children }) {
   // Course recommendations
   const getRecommendedCourses = useCallback((userId = null, limit = 6) => {
     // Simple recommendation logic - can be enhanced with ML
-    const enrolledCourseIds = enrollmentsHook.enrollments.map(e => e.course);
-    const recommended = coursesHook.courses
+    const enrolledCourseIds = Array.isArray(enrollmentsHook.enrollments)
+      ? enrollmentsHook.enrollments.map(e => e.course)
+      : [];
+    const recommended = Array.isArray(coursesHook.courses) ? coursesHook.courses
       .filter(course => !enrolledCourseIds.includes(course.id))
       .sort((a, b) => (b.enrollment_count || 0) - (a.enrollment_count || 0))
-      .slice(0, limit);
+      .slice(0, limit) : [];
 
     return recommended;
   }, [coursesHook.courses, enrollmentsHook.enrollments]);
@@ -194,6 +196,14 @@ export function CourseProvider({ children }) {
     // Categories and utilities
     getCategories: coursesHook.getCategories,
     getInstructorCourses: coursesHook.getInstructorCourses,
+
+    // Module and lesson operations
+    getCourseModules: coursesHook.getCourseModules,
+    createModule: coursesHook.createModule,
+    updateModule: coursesHook.updateModule,
+    getModuleLessons: coursesHook.getModuleLessons,
+    createLesson: coursesHook.createLesson,
+    updateLesson: coursesHook.updateLesson,
 
     // Enhanced features
     getRecommendedCourses,
