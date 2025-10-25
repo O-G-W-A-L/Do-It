@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronRight, X, Bell, Grid3X3, User, Settings, HelpCircle, Moon, LogOut, BookOpen, TrendingUp, Award, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useCourseContext } from '../contexts/CourseContext';
 import { useAnalyticsContext } from '../contexts/AnalyticsContext';
@@ -67,9 +68,17 @@ export default function CourseLanding() {
     setEnrollingCourseId(courseId);
     try {
       await enrollInCourse(courseId);
-      // Enrollment successful - courses context will update automatically
+      // Find course name for success message
+      const course = courses.find(c => c.id === courseId);
+      const courseName = course?.title || 'the course';
+      toast.success(`Successfully enrolled in ${courseName}!`);
     } catch (error) {
       console.error('Enrollment failed:', error);
+      // Show user-friendly error message
+      const errorMessage = error?.response?.data?.detail ||
+                          error?.message ||
+                          'Failed to enroll in course. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setEnrollingCourseId(null);
     }
