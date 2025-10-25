@@ -31,6 +31,9 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Check if this is an enrollment request - handle differently
+    const isEnrollmentRequest = originalRequest.url?.includes('/enroll/');
+
     // If 401 and we haven't retried yet, attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -58,7 +61,16 @@ api.interceptors.response.use(
         return api(originalRequest);
 
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
+        // For enrollment requests, don't redirect - let the component handle it
+        if (isEnrollmentRequest) {
+          // Create a custom error that the component can handle
+          const authError = new Error('Authentication required. Please log in to enroll in courses.');
+          authError.isAuthError = true;
+          authError.status = 401;
+          return Promise.reject(authError);
+        }
+
+        // For other requests, refresh failed, clear tokens and redirect to login
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
 
