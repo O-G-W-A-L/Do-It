@@ -260,6 +260,102 @@ export function useCourses() {
     }
   }, []);
 
+  // Get course modules
+  const getCourseModules = useCallback(async (courseId) => {
+    try {
+      const result = await coursesService.getCourseModules(courseId);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch course modules');
+      return null;
+    }
+  }, []);
+
+  // Create module
+  const createModule = useCallback(async (moduleData) => {
+    try {
+      const result = await coursesService.createModule(moduleData);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to create module');
+      return null;
+    }
+  }, []);
+
+  // Update module
+  const updateModule = useCallback(async (moduleId, moduleData) => {
+    try {
+      const result = await coursesService.updateModule(moduleId, moduleData);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update module');
+      return null;
+    }
+  }, []);
+
+  // Get module lessons
+  const getModuleLessons = useCallback(async (moduleId) => {
+    try {
+      const result = await coursesService.getModuleLessons(moduleId);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch module lessons');
+      return null;
+    }
+  }, []);
+
+  // Create lesson
+  const createLesson = useCallback(async (lessonData) => {
+    try {
+      const result = await coursesService.createLesson(lessonData);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to create lesson');
+      return null;
+    }
+  }, []);
+
+  // Update lesson
+  const updateLesson = useCallback(async (lessonId, lessonData) => {
+    try {
+      const result = await coursesService.updateLesson(lessonId, lessonData);
+      if (result.success) {
+        return result.data;
+      } else {
+        setError(result.error);
+        return null;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update lesson');
+      return null;
+    }
+  }, []);
+
   return {
     courses,
     loading,
@@ -276,6 +372,13 @@ export function useCourses() {
     createReview,
     getCategories,
     getInstructorCourses,
+    // Module and lesson operations
+    getCourseModules,
+    createModule,
+    updateModule,
+    getModuleLessons,
+    createLesson,
+    updateLesson,
     // Utility functions
     clearError: () => setError(null),
     setCourses: setCourses
