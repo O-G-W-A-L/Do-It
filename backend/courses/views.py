@@ -34,7 +34,13 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         # Filter by status for non-instructors
         if not user.profile.is_instructor and not user.profile.is_admin:
-            queryset = queryset.filter(status='published')
+            # Students can see published courses + courses they're enrolled in
+            enrolled_course_ids = Enrollment.objects.filter(
+                student=user, status__in=['active', 'completed']
+            ).values_list('course_id', flat=True)
+            queryset = queryset.filter(
+                Q(status='published') | Q(id__in=enrolled_course_ids)
+            )
 
         # Instructors can only see their own courses (unless admin)
         if user.profile.is_instructor and not user.profile.is_admin:
