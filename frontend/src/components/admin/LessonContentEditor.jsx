@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import MDEditor from '@uiw/react-md-editor';
 import { Upload, Video, FileText, HelpCircle, Save } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -15,6 +14,13 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
     setVideoUrl(lesson?.video_url || '');
     setAttachments(lesson?.attachments || []);
   }, [lesson]);
+
+  // Map lesson type to content_type for editor
+  const getLessonContentType = () => {
+    if (lesson?.content_type) return lesson.content_type;
+    if (lesson?.type) return lesson.type;
+    return 'text';
+  };
 
   const handleContentChange = (value) => {
     setContent(value);
@@ -47,24 +53,10 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
     }
   };
 
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      ['link', 'image'],
-      ['clean']
-    ],
-  };
 
-  const quillFormats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'indent', 'link', 'image'
-  ];
 
   const renderContentEditor = () => {
-    switch (lesson?.content_type) {
+    switch (getLessonContentType()) {
       case 'video':
         return (
           <div className="space-y-4">
@@ -98,13 +90,15 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Video Description
               </label>
-              <ReactQuill
-                theme="snow"
+              <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Add video description, transcript, or additional notes..."
+                preview="edit"
+                hideToolbar={false}
+                data-color-mode="light"
+                textareaProps={{
+                  placeholder: "Add video description, transcript, or additional notes..."
+                }}
               />
             </div>
           </div>
@@ -121,13 +115,15 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <p className="text-sm text-gray-600 mb-4">
                 Quiz functionality will be implemented here. For now, add quiz instructions:
               </p>
-              <ReactQuill
-                theme="snow"
+              <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Add quiz instructions, questions will be created separately..."
+                preview="edit"
+                hideToolbar={false}
+                data-color-mode="light"
+                textareaProps={{
+                  placeholder: "Add quiz instructions, questions will be created separately..."
+                }}
               />
             </div>
           </div>
@@ -141,13 +137,15 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
                 <FileText className="w-5 h-5 text-green-600" />
                 <h4 className="text-sm font-medium text-gray-700">Assignment Details</h4>
               </div>
-              <ReactQuill
-                theme="snow"
+              <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Describe the assignment requirements, objectives, and submission guidelines..."
+                preview="edit"
+                hideToolbar={false}
+                data-color-mode="light"
+                textareaProps={{
+                  placeholder: "Describe the assignment requirements, objectives, and submission guidelines..."
+                }}
               />
             </div>
 
@@ -171,14 +169,15 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Lesson Content
               </label>
-              <ReactQuill
-                theme="snow"
+              <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Write your lesson content here..."
-                className="bg-white"
+                preview="edit"
+                hideToolbar={false}
+                data-color-mode="light"
+                textareaProps={{
+                  placeholder: "Write your lesson content here..."
+                }}
               />
             </div>
 
