@@ -118,11 +118,10 @@ export default function Hub() {
                   <div className="space-y-3">
                     {Array.isArray(enrollments) && enrollments.slice(0, 3).map(enrollment => {
                       if (!enrollment || !enrollment.id) return null;
-                      const course = courses.find(c => c.id === enrollment.course);
                       return (
                         <div key={enrollment.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{course?.title || 'Course Title'}</h4>
+                            <h4 className="font-medium text-gray-900">{enrollment.course_title}</h4>
                             <p className="text-sm text-gray-600">Module {Math.floor((enrollment.progress_percentage || 0) / 20) + 1} • {(enrollment.progress_percentage || 0)}% complete</p>
                           </div>
                           <button
@@ -153,12 +152,11 @@ export default function Hub() {
                     {Array.isArray(enrollments) && enrollments.length > 0 ? (
                       enrollments.slice(0, 2).map(enrollment => {
                         if (!enrollment || !enrollment.id) return null;
-                        const course = courses.find(c => c.id === enrollment.course);
                         return (
                           <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-start mb-3">
                               <div>
-                                <h4 className="font-medium text-gray-900">{course?.title || 'Course Project'}</h4>
+                                <h4 className="font-medium text-gray-900">{enrollment.course_title}</h4>
                                 <p className="text-sm text-gray-600">Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}</p>
                               </div>
                               <span className={`px-2 py-1 text-xs font-medium rounded ${
@@ -203,15 +201,17 @@ export default function Hub() {
                   <div className="space-y-4">
                     {Array.isArray(enrollments) && enrollments.slice(0, 2).map(enrollment => {
                       if (!enrollment || !enrollment.id) return null;
-                      const course = courses.find(c => c.id === enrollment.course);
                       const isExpanded = expandedReports[enrollment.id];
+                      const enrolledDate = new Date(enrollment.enrolled_at);
+                      const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      const previousMonth = new Date(enrolledDate.getFullYear(), enrolledDate.getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
                       return (
                         <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium text-gray-900 text-sm">{course?.title || 'Course Title'}</h4>
+                                <h4 className="font-medium text-gray-900 text-sm">{enrollment.course_title}</h4>
                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
                                   ✓ Validated
                                 </span>
@@ -230,7 +230,7 @@ export default function Hub() {
                             <div className="space-y-3 pt-3 border-t border-gray-200">
 
                               <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-600">October 2024</span>
+                                <span className="text-sm text-gray-600">{previousMonth}</span>
                                 <div className="flex items-center gap-2">
                                   <div className="w-20 bg-gray-200 rounded-full h-2">
                                     <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
@@ -241,7 +241,7 @@ export default function Hub() {
                               </div>
 
                               <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-600">November 2024</span>
+                                <span className="text-sm text-gray-600">{currentMonth}</span>
                                 <div className="flex items-center gap-2">
                                   <div className="w-20 bg-gray-200 rounded-full h-2">
                                     <div className="bg-brand-blue h-2 rounded-full" style={{ width: `${enrollment.progress_percentage || 0}%` }}></div>
@@ -288,13 +288,12 @@ export default function Hub() {
                 <div className="grid gap-4">
                   {Array.isArray(enrollments) && enrollments.map(enrollment => {
                     if (!enrollment || !enrollment.id) return null;
-                    const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                              {course?.title || 'Course Title'}
+                              {enrollment.course_title}
                             </h3>
                             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -355,10 +354,9 @@ export default function Hub() {
                   <option value="">All Courses</option>
                   {Array.isArray(enrollments) && enrollments.map(enrollment => {
                     if (!enrollment || !enrollment.id) return null;
-                    const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <option key={enrollment.id} value={enrollment.id}>
-                        {course?.title || 'Course Title'} ({enrollment.progress_percentage || 0}%)
+                        {enrollment.course_title} ({enrollment.progress_percentage || 0}%)
                       </option>
                     );
                   })}
@@ -383,7 +381,6 @@ export default function Hub() {
                   .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
                   .map(enrollment => {
                     if (!enrollment || !enrollment.id) return null;
-                    const course = courses.find(c => c.id === enrollment.course);
                     return (
                       <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                         <div className="flex justify-between items-start">
@@ -396,7 +393,7 @@ export default function Hub() {
                                 onClick={() => window.location.href = '/dashboard'}
                                 className="text-brand-blue hover:text-brand-blue-light font-medium text-left"
                               >
-                                {course?.title || 'Course Title'}
+                                {enrollment.course_title}
                               </button>
                             </div>
                             <div className="text-sm text-gray-600 space-y-1">
@@ -456,7 +453,6 @@ export default function Hub() {
                   .filter(enrollment => !selectedCourse || enrollment.id === selectedCourse)
                   .map(enrollment => {
                     if (!enrollment || !enrollment.id) return null;
-                    const course = courses.find(c => c.id === enrollment.course);
                     const isExpanded = expandedModules[enrollment.id];
 
                     return (
@@ -475,7 +471,7 @@ export default function Hub() {
                               <ChevronRight className="w-5 h-5 text-gray-500" />
                             )}
                             <span className="font-medium text-gray-900">
-                              {course?.title || 'Course Title'} - Introduction Modules
+                              {enrollment.course_title} - Introduction Modules
                             </span>
                           </div>
                           <span className="text-sm text-gray-600">
