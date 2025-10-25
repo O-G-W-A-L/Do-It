@@ -39,21 +39,27 @@ export default function CourseLanding() {
   };
 
   // Get enrolled courses with progress data
-  const enrolledCourses = enrollments.map(enrollment => ({
-    id: enrollment.id,
-    courseId: enrollment.course,
-    title: enrollment.course_title || 'Course Title',
-    status: enrollment.status,
-    progress: enrollment.progress_percentage || 0,
-    enrolledAt: enrollment.enrolled_at,
-    completedAt: enrollment.completed_at,
-    currentModule: enrollment.current_module,
-    currentLesson: enrollment.current_lesson,
-    amountPaid: enrollment.amount_paid
-  }));
+  const enrolledCourses = Array.isArray(enrollments) ? enrollments
+    .map(enrollment => {
+      const course = courses.find(c => c.id === enrollment.course);
+      if (!course) return null; // Skip if course not found
+      return {
+        id: enrollment.id,
+        courseId: enrollment.course,
+        title: course.title,
+        status: enrollment.status,
+        progress: enrollment.progress_percentage || 0,
+        enrolledAt: enrollment.enrolled_at,
+        completedAt: enrollment.completed_at,
+        currentModule: enrollment.current_module,
+        currentLesson: enrollment.current_lesson,
+        amountPaid: enrollment.amount_paid
+      };
+    })
+    .filter(Boolean) : [];
 
   // Get available courses (not enrolled in)
-  const enrolledCourseIds = new Set(enrollments.map(e => e.course));
+  const enrolledCourseIds = Array.isArray(enrollments) ? new Set(enrollments.map(e => e.course)) : new Set();
   const availableCourses = courses.filter(course => !enrolledCourseIds.has(course.id));
 
   // Handle course enrollment
