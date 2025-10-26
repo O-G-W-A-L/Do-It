@@ -26,12 +26,12 @@ export function CourseProvider({ children }) {
 
   // Reactive data loading - only load when user is authenticated
   useEffect(() => {
-    const userId = user?.id || null;
+    const userId = user?.id;
 
-    // If user changed, clear old data and fetch fresh data
+    // If user changed (compare IDs, not objects), clear old data and fetch fresh data
     if (currentUserId !== userId) {
-      if (currentUserId !== null) {
-        // User changed - clear all data
+      if (currentUserId !== null && currentUserId !== undefined) {
+        // User actually changed - clear all data
         enrollmentsHook.setEnrollments([]);
         coursesHook.setCourses([]);
       }

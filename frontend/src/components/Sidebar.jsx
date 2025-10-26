@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import {
   FiHome, FiGrid, FiAlertTriangle,
   FiCalendar, FiFolder, FiRepeat, FiBarChart2,
@@ -10,22 +11,28 @@ import {
 import { useAuth } from '../hooks/useAuth';
 
 const MENU = [
-  { key: 'home',              icon: FiHome,           label: 'Home' },
-  { key: 'planning',          icon: FiCalendar,       label: 'My Planning' },
-  { key: 'projects',          icon: FiFolder,         label: 'Projects' },
-  { key: 'qa-reviews',        icon: FiAlertTriangle,  label: 'QA Reviews I can make' },
-  { key: 'evaluation-quizzes', icon: FiBarChart2,     label: 'Evaluation quizzes' },
-  { key: 'my-courses',        icon: FiBookOpen,       label: 'My courses' },
-  { key: 'concepts',          icon: FiCpu,            label: 'Concepts' },
-  { key: 'conference-rooms',  icon: FiMessageSquare,  label: 'Conference rooms' },
-  { key: 'servers',           icon: FiServer,         label: 'Servers' },
-  { key: 'sandboxes',         icon: FiBox,            label: 'Sandboxes' },
-  { key: 'video-on-demand',   icon: FiVideo,          label: 'Video on demand' },
-  { key: 'peers',             icon: FiUsers,          label: 'Peers' },
+  { key: 'hub',               route: '/hub',              icon: FiHome,           label: 'Home' },
+  { key: 'planning',          route: '/planning',         icon: FiCalendar,       label: 'My Planning' },
+  { key: 'projects',          route: '/projects',         icon: FiFolder,         label: 'Projects' },
+  { key: 'qa-reviews',        route: '/qa-reviews',       icon: FiAlertTriangle,  label: 'QA Reviews I can make' },
+  { key: 'evaluation-quizzes', route: '/evaluation-quizzes', icon: FiBarChart2,     label: 'Evaluation quizzes' },
+  { key: 'my-courses',        route: '/my-courses',       icon: FiBookOpen,       label: 'My courses' },
+  { key: 'concepts',          route: '/concepts',         icon: FiCpu,            label: 'Concepts' },
+  { key: 'conference-rooms',  route: '/conference-rooms', icon: FiMessageSquare,  label: 'Conference rooms' },
+  { key: 'servers',           route: '/servers',          icon: FiServer,         label: 'Servers' },
+  { key: 'sandboxes',         route: '/sandboxes',        icon: FiBox,            label: 'Sandboxes' },
+  { key: 'video-on-demand',   route: '/video-on-demand',  icon: FiVideo,          label: 'Video on demand' },
+  { key: 'peers',             route: '/peers',            icon: FiUsers,          label: 'Peers' },
 ];
 
 export default function Sidebar({ currentView, onViewChange, onAddTask, onClose }) {
   const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleNavigation = (route) => {
+    navigate(route);
+    if (onClose) onClose();
+  };
 
   return (
     <aside className="w-64 bg-white shadow-md h-screen flex flex-col">
@@ -52,17 +59,17 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Main
           </h3>
-          {MENU.slice(0, 4).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(0, 4).map(({ key, route, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => onViewChange(key)}
+              onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
                   ? 'bg-indigo-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} /> 
+              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} />
               {label}
             </button>
           ))}
@@ -73,17 +80,17 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Tools
           </h3>
-          {MENU.slice(4, 8).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(4, 8).map(({ key, route, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => onViewChange(key)}
+              onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
                   ? 'bg-indigo-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} /> 
+              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} />
               {label}
             </button>
           ))}
@@ -94,17 +101,17 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             Account
           </h3>
-          {MENU.slice(8).map(({ key, icon: Icon, label }) => (
+          {MENU.slice(8).map(({ key, route, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => onViewChange(key)}
+              onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
                   ? 'bg-indigo-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} /> 
+              <Icon className={`mr-3 ${currentView === key ? 'text-indigo-700' : 'text-gray-500'}`} />
               {label}
             </button>
           ))}
