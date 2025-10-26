@@ -14,12 +14,27 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import Hub from './pages/Hub';
 import CourseDiscovery from './pages/CourseDiscovery';
+import CourseContent from './pages/CourseContent';
+import ModuleContent from './pages/ModuleContent';
 import EmailVerification from './pages/EmailVerification';
 import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import AcceptInvitation from './pages/AcceptInvitation';
 import AdminPortal from './pages/AdminPortal';
+import Planning from './pages/Planning';
+import Projects from './pages/Projects';
+import QAReviews from './pages/QAReviews';
+import EvaluationQuizzes from './pages/EvaluationQuizzes';
+import MyCourses from './pages/MyCourses';
+import Concepts from './pages/Concepts';
+import ConferenceRooms from './pages/ConferenceRooms';
+import Servers from './pages/Servers';
+import Sandboxes from './pages/Sandboxes';
+import VideoOnDemand from './pages/VideoOnDemand';
+import Peers from './pages/Peers';
+import Layout from './components/Layout';
+import { SelectedCourseProvider } from './contexts/SelectedCourseContext';
 
 
 
@@ -43,9 +58,10 @@ export default function App() {
       <Router>
         <AuthProvider>
           <CourseProvider>
-            <PaymentProvider>
-              <AnalyticsProvider>
-                <NotificationProvider>
+            <SelectedCourseProvider>
+              <PaymentProvider>
+                <AnalyticsProvider>
+                  <NotificationProvider>
                   <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/login" element={<LoginPage />} />
@@ -64,7 +80,9 @@ export default function App() {
                         path="/hub"
                         element={
                           <Protected>
-                            <Hub />
+                            <Layout title="Learning Hub" currentView="hub">
+                              <Hub />
+                            </Layout>
                           </Protected>
                         }
                       />
@@ -73,7 +91,31 @@ export default function App() {
                         path="/courses"
                         element={
                           <Protected>
-                            <CourseDiscovery />
+                            <Layout title="Course Discovery" currentView="courses">
+                              <CourseDiscovery />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/course/:courseId"
+                        element={
+                          <Protected>
+                            <Layout title="Course Content" currentView="course">
+                              <CourseContent />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/courses/:courseId/modules/:moduleId"
+                        element={
+                          <Protected>
+                            <Layout title="Module Content" currentView="module">
+                              <ModuleContent />
+                            </Layout>
                           </Protected>
                         }
                       />
@@ -94,7 +136,9 @@ export default function App() {
                         path="/profile"
                         element={
                           <Protected>
-                            <ProfilePage />
+                            <Layout title="Profile" currentView="profile">
+                              <ProfilePage />
+                            </Layout>
                           </Protected>
                         }
                       />
@@ -103,7 +147,9 @@ export default function App() {
                         path="/settings"
                         element={
                           <Protected>
-                            <Settings />
+                            <Layout title="Settings" currentView="settings">
+                              <Settings />
+                            </Layout>
                           </Protected>
                         }
                       />
@@ -112,16 +158,140 @@ export default function App() {
                         path="/support"
                         element={
                           <Protected>
-                            <Support />
+                            <Layout title="Support" currentView="support">
+                              <Support />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/planning"
+                        element={
+                          <Protected>
+                            <Layout title="My Planning" currentView="planning">
+                              <Planning />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/projects"
+                        element={
+                          <Protected>
+                            <Layout title="Projects" currentView="projects">
+                              <Projects />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/qa-reviews"
+                        element={
+                          <Protected>
+                            <Layout title="QA Reviews" currentView="qa-reviews">
+                              <QAReviews />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/evaluation-quizzes"
+                        element={
+                          <Protected>
+                            <Layout title="Evaluation Quizzes" currentView="evaluation-quizzes">
+                              <EvaluationQuizzes />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/my-courses"
+                        element={
+                          <Protected>
+                            <Layout title="My Courses" currentView="my-courses">
+                              <MyCourses />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/concepts"
+                        element={
+                          <Protected>
+                            <Layout title="Concepts" currentView="concepts">
+                              <Concepts />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/conference-rooms"
+                        element={
+                          <Protected>
+                            <Layout title="Conference Rooms" currentView="conference-rooms">
+                              <ConferenceRooms />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/servers"
+                        element={
+                          <Protected>
+                            <Layout title="Servers" currentView="servers">
+                              <Servers />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/sandboxes"
+                        element={
+                          <Protected>
+                            <Layout title="Sandboxes" currentView="sandboxes">
+                              <Sandboxes />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/video-on-demand"
+                        element={
+                          <Protected>
+                            <Layout title="Video on Demand" currentView="video-on-demand">
+                              <VideoOnDemand />
+                            </Layout>
+                          </Protected>
+                        }
+                      />
+
+                      <Route
+                        path="/peers"
+                        element={
+                          <Protected>
+                            <Layout title="Peers" currentView="peers">
+                              <Peers />
+                            </Layout>
                           </Protected>
                         }
                       />
 
 
                     </Routes>
-                </NotificationProvider>
-              </AnalyticsProvider>
-            </PaymentProvider>
+                  </NotificationProvider>
+                </AnalyticsProvider>
+              </PaymentProvider>
+            </SelectedCourseProvider>
           </CourseProvider>
         </AuthProvider>
       </Router>
