@@ -71,11 +71,12 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     student_username = serializers.CharField(source='student.username', read_only=True)
     course_title = serializers.CharField(source='course.title', read_only=True)
     course_slug = serializers.CharField(source='course.slug', read_only=True)
+    course = serializers.IntegerField(source='course.id', read_only=True)
 
     class Meta:
         model = Enrollment
         fields = [
-            'id', 'student_name', 'student_username', 'course_title', 'course_slug',
+            'id', 'student_name', 'student_username', 'course', 'course_title', 'course_slug',
             'status', 'enrolled_at', 'completed_at', 'last_accessed',
             'progress_percentage', 'current_module', 'current_lesson',
             'amount_paid'
