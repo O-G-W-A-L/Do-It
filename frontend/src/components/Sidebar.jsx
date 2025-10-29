@@ -12,7 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const MENU = [
   { key: 'hub',               route: '/hub',              icon: FiHome,           label: 'Home' },
-  { key: 'planning',          route: '/planning',         icon: FiCalendar,       label: 'My Planning' },
+  { key: 'calendar',          route: '/calendar',         icon: FiCalendar,       label: 'My Calendar' },
   { key: 'projects',          route: '/projects',         icon: FiFolder,         label: 'Projects' },
   { key: 'qa-reviews',        route: '/qa-reviews',       icon: FiAlertTriangle,  label: 'QA Reviews I can make' },
   { key: 'evaluation-quizzes', route: '/evaluation-quizzes', icon: FiBarChart2,     label: 'Evaluation quizzes' },

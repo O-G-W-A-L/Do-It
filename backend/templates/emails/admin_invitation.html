@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>You're invited to join Do-It</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Do-It!</h1>
+            <p>You've been invited to join our learning platform</p>
+        </div>
+
+        <div class="content">
+            <h2>Hello!</h2>
+
+            <p><strong>{{ invited_by }}</strong> has invited you to join <strong>Do-It</strong> as a <strong>{{ role }}</strong>.</p>
+
+            <p>Do-It is a comprehensive learning management system where you can create and manage courses, track student progress, and build amazing educational experiences.</p>
+
+            <p>As a {{ role|lower }}, you'll have access to:</p>
+            <ul>
+                {% if role == 'Instructor' %}
+                <li>Create and manage your courses</li>
+                <li>Track student enrollment and progress</li>
+                <li>Access analytics and insights</li>
+                <li>Communicate with your students</li>
+                {% elif role == 'Admin' %}
+                <li>Full platform administration</li>
+                <li>Manage users and instructors</li>
+                <li>Access all platform analytics</li>
+                <li>Configure system settings</li>
+                {% endif %}
+            </ul>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ invitation_url }}" class="button">Accept Invitation & Join Do-It</a>
+            </div>
+
+            <p><strong>Important:</strong> This invitation link will expire in 24 hours for security reasons.</p>
+
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px;">{{ invitation_url }}</p>
+
+            <p>If you weren't expecting this invitation or have any questions, please contact our support team.</p>
+
+            <p>Welcome aboard!<br>The Do-It Team</p>
+        </div>
+
+        <div class="footer">
+            <p>This email was sent to {{ invitation.email }} at {{ invitation.created|date:"M d, Y g:i A" }}</p>
+            <p>If you no longer wish to receive these emails, you can unsubscribe at any time.</p>
+        </div>
+    </div>
+</body>
+</html>

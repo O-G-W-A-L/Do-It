@@ -22,7 +22,7 @@ import Settings from './pages/Settings';
 import Support from './pages/Support';
 import AcceptInvitation from './pages/AcceptInvitation';
 import AdminPortal from './pages/AdminPortal';
-import Planning from './pages/Planning';
+import Calendar from './pages/Calendar';
 import Projects from './pages/Projects';
 import QAReviews from './pages/QAReviews';
 import EvaluationQuizzes from './pages/EvaluationQuizzes';
@@ -166,11 +166,11 @@ export default function App() {
                       />
 
                       <Route
-                        path="/planning"
+                        path="/calendar"
                         element={
                           <Protected>
-                            <Layout title="My Planning" currentView="planning">
-                              <Planning />
+                            <Layout title="My Calendar" currentView="calendar">
+                              <Calendar />
                             </Layout>
                           </Protected>
                         }
