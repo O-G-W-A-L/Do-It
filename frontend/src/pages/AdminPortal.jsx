@@ -108,15 +108,17 @@ export default function AdminPortal() {
           {renderMainContent()}
         </main>
 
-        {/* BOTTOM BAR */}
-        <AdminBottomBar
-          onSave={handleSave}
-          onPublish={handlePublish}
-          onUndo={handleUndo}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isPublishing={isPublishing}
-          lastSaved={lastSaved}
-        />
+        {/* BOTTOM BAR - Only show for Courses section */}
+        {activeSection === 'courses' && (
+          <AdminBottomBar
+            onSave={handleSave}
+            onPublish={handlePublish}
+            onUndo={handleUndo}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isPublishing={isPublishing}
+            lastSaved={lastSaved}
+          />
+        )}
       </div>
 
       {/* RIGHT HELP PANEL - Hidden for Users section to give full width */}
