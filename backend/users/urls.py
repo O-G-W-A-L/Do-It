@@ -11,7 +11,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'management', UserManagementViewSet, basename='user-management')
+router.register(r'', UserManagementViewSet, basename='user-management')
 
 urlpatterns = [
     # User profile endpoints
