@@ -330,7 +330,11 @@ class UserManagementViewSet(ModelViewSet):
 
     def get_queryset(self):
         # Only admins can access this
-        if not self.request.user.profile.is_admin:
+        try:
+            if not self.request.user.profile.is_admin:
+                return self.queryset.none()
+        except AttributeError:
+            # User doesn't have a profile, deny access
             return self.queryset.none()
 
         return self.queryset.all()
@@ -343,7 +347,10 @@ class UserManagementViewSet(ModelViewSet):
     @action(detail=True, methods=['post'])
     def change_role(self, request, pk=None):
         """Change user role (admin only)"""
-        if not request.user.profile.is_admin:
+        try:
+            if not request.user.profile.is_admin:
+                return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         user = self.get_object()
@@ -360,7 +367,10 @@ class UserManagementViewSet(ModelViewSet):
     @action(detail=True, methods=['post'])
     def toggle_active(self, request, pk=None):
         """Activate/deactivate user account (admin only)"""
-        if not request.user.profile.is_admin:
+        try:
+            if not request.user.profile.is_admin:
+                return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         user = self.get_object()
@@ -373,7 +383,10 @@ class UserManagementViewSet(ModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get user statistics (admin only)"""
-        if not request.user.profile.is_admin:
+        try:
+            if not request.user.profile.is_admin:
+                return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
             return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         from django.contrib.auth import get_user_model
