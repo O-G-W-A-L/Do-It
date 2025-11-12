@@ -5,10 +5,10 @@ import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminBottomBar from '../components/admin/AdminBottomBar';
 import AdminHelpPanel from '../components/admin/AdminHelpPanel';
 import CourseBuilder from '../components/admin/CourseBuilder';
+import UsersManagement from '../components/admin/UsersManagement';
 
 /**
- * Full Admin Portal - Hybrid Dashboard System
- * 1 Screen, 4 Zones: Sidebar | Main Content | Help Panel | Bottom Bar
+ * Full Admin Portal
  */
 export default function AdminPortal() {
   const { user, logout } = useAuth();
@@ -51,6 +51,8 @@ export default function AdminPortal() {
     switch (activeSection) {
       case 'courses':
         return <CourseBuilder onSave={handleSave} onPublish={handlePublish} />;
+      case 'users':
+        return <UsersManagement onSave={handleSave} />;
       case 'dashboard':
         return (
           <div className="p-8">
@@ -117,8 +119,8 @@ export default function AdminPortal() {
         />
       </div>
 
-      {/* RIGHT HELP PANEL */}
-      <AdminHelpPanel section={activeSection} />
+      {/* RIGHT HELP PANEL - Hidden for Users section to give full width */}
+      {activeSection !== 'users' && <AdminHelpPanel section={activeSection} />}
     </div>
   );
 }
