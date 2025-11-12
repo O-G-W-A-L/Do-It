@@ -13,10 +13,6 @@ urlpatterns = [
     path('api/payments/', include('payments.urls')), # Payment processing & billing
     path('api/notifications/', include('notifications.urls')), # Notification system
     path('api/analytics/', include('analytics.urls')), # Analytics & insights
-
-    # Legacy dj-rest-auth endpoints (for compatibility)
-    path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
 ]
 
 # Serve media files in development
