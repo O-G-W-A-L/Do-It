@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -324,6 +324,7 @@ class UserManagementViewSet(ModelViewSet):
     """
     Admin viewset for managing users (full CRUD operations)
     """
+    queryset = get_user_model().objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
