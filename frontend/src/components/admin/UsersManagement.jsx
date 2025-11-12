@@ -71,14 +71,10 @@ const UsersManagement = ({ onSave }) => {
       if (statusFilter !== 'all') params.append('is_active', statusFilter === 'active' ? 'true' : 'false');
       params.append('ordering', `${sortOrder === 'desc' ? '-' : ''}${sortBy}`);
 
-      const response = await api.get(`/api/auth/management/?${params.toString()}`);
-
-      if (response.success) {
-        setUsers(response.data.results || response.data);
-      } else {
-        setError(response.error);
-      }
+      const { data } = await api.get(`/api/auth/management/?${params.toString()}`);
+      setUsers(data.results || data);
     } catch (err) {
+      console.error('Failed to load users:', err);
       setError('Failed to load users');
     } finally {
       setLoading(false);
@@ -88,10 +84,8 @@ const UsersManagement = ({ onSave }) => {
   const loadStats = async () => {
     try {
       setStatsLoading(true);
-      const response = await api.get('/api/auth/management/stats/');
-      if (response.success) {
-        setStats(response.data);
-      }
+      const { data } = await api.get('/api/auth/management/stats/');
+      setStats(data);
     } catch (err) {
       console.error('Failed to load stats:', err);
     } finally {
@@ -102,23 +96,20 @@ const UsersManagement = ({ onSave }) => {
   const handleUserAction = async (userId, action, data = {}) => {
     try {
       setActionLoading(userId);
-      const response = await api.post(`/api/auth/management/${userId}/${action}/`, data);
+      const { data: responseData } = await api.post(`/api/auth/management/${userId}/${action}/`, data);
 
-      if (response.success) {
-        // Update local state
-        setUsers(users.map(u =>
-          u.id === userId ? { ...u, ...response.data } : u
-        ));
+      // Update local state
+      setUsers(users.map(u =>
+        u.id === userId ? { ...u, ...responseData } : u
+      ));
 
-        // Reload stats
-        loadStats();
+      // Reload stats
+      loadStats();
 
-        toast.success(`${action.replace('_', ' ')} successful`);
-        onSave?.();
-      } else {
-        toast.error(response.error);
-      }
+      toast.success(`${action.replace('_', ' ')} successful`);
+      onSave?.();
     } catch (err) {
+      console.error(`Failed to ${action}:`, err);
       toast.error(`Failed to ${action.replace('_', ' ')}`);
     } finally {
       setActionLoading(null);
@@ -135,7 +126,7 @@ const UsersManagement = ({ onSave }) => {
       );
 
       const results = await Promise.allSettled(promises);
-      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
       const failCount = results.length - successCount;
 
       if (successCount > 0) {
@@ -152,6 +143,7 @@ const UsersManagement = ({ onSave }) => {
       setSelectedUsers(new Set());
       setShowBulkActions(false);
     } catch (err) {
+      console.error('Bulk operation failed:', err);
       toast.error('Bulk operation failed');
     } finally {
       setActionLoading(null);
