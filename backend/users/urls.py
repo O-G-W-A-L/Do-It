@@ -8,6 +8,10 @@ from .views import (
     password_reset_request, password_reset_confirm,
     get_user_enrollments, UserManagementViewSet, UserMeView,
     send_admin_invitation, accept_admin_invitation,
+    # Enhanced profile endpoints
+    get_user_preferences, update_user_preferences,
+    get_user_security_dashboard, logout_session, logout_all_sessions,
+    get_user_learning_data,
 )
 
 router = DefaultRouter()
@@ -33,6 +37,14 @@ urlpatterns = [
 
     # User functionality
     path('enrollments/', get_user_enrollments),
+
+    # Enhanced profile management
+    path('profile/preferences/', get_user_preferences, name='user-preferences'),
+    path('profile/preferences/update/', update_user_preferences, name='update-user-preferences'),
+    path('profile/security/', get_user_security_dashboard),
+    path('profile/logout-session/<int:session_id>/', logout_session),
+    path('profile/logout-all-sessions/', logout_all_sessions),
+    path('profile/learning-data/', get_user_learning_data),
 
     # Admin management (router URLs)
     path('management/', include(router.urls)),

@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import EmailVerification, Profile, UserSession, LoginHistory, UserBan, UserStatus
+from .models import EmailVerification, Profile, UserSession, LoginHistory, UserBan, UserStatus, UserPreferences
 
 # REGISTRATION & EMAIL VERIFICATION
 class RegisterSerializer(serializers.ModelSerializer):
@@ -153,12 +153,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     role_display = serializers.CharField(source='get_role_display', read_only=True)
     is_account_locked = serializers.BooleanField(read_only=True)
+    profile_visibility_display = serializers.CharField(source='get_profile_visibility_display', read_only=True)
 
     class Meta:
         model = Profile
         fields = (
             'role', 'role_display', 'bio', 'location', 'profile_image', 'phone_number',
             'is_profile_complete', 'enrolled_courses_count', 'completed_courses_count',
+            # Enhanced LMS fields
+            'skills', 'achievements', 'teaching_subjects', 'profile_visibility', 'profile_visibility_display',
+            # Instructor fields
             'assigned_courses_count', 'is_active_instructor', 'is_account_locked',
             'created_at', 'updated_at'
         )
@@ -238,6 +242,20 @@ class UserSessionSerializer(serializers.ModelSerializer):
 
     def get_user_full_name(self, obj):
         return obj.user.get_full_name() or obj.user.username
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    """Serializer for user preferences and settings"""
+
+    class Meta:
+        model = UserPreferences
+        fields = (
+            'language', 'timezone', 'email_notifications', 'push_notifications',
+            'study_reminders', 'course_updates', 'achievement_notifications',
+            'weekly_study_goal', 'preferred_study_time', 'learning_style',
+            'show_learning_progress', 'show_achievements', 'allow_profile_views',
+            'created_at', 'updated_at'
+        )
+        read_only_fields = ('created_at', 'updated_at')
 
 class LoginHistorySerializer(serializers.ModelSerializer):
     user_full_name = serializers.SerializerMethodField()

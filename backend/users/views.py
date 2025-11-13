@@ -24,6 +24,7 @@ from .models import Profile, EmailVerification, AdminInvitation, UserSession, Lo
 from .serializers import (
     UserSerializer, ProfileSerializer, AdminUserSerializer,
     UserSessionSerializer, LoginHistorySerializer, UserBanSerializer, UserStatusSerializer,
+    UserPreferencesSerializer,
     RegisterSerializer, VerifyEmailSerializer, ResendVerificationSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     CustomTokenObtainPairSerializer,
@@ -178,6 +179,232 @@ class UserMeView(APIView):
             return Response(UserSerializer(request.user).data)
         except Exception:
             return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        try:
+            # Handle user basic fields
+            user_data = {}
+            profile_data = {}
+            preferences_data = {}
+
+            # Separate data by model
+            for key, value in request.data.items():
+                if key in ['first_name', 'last_name', 'email']:
+                    user_data[key] = value
+                elif key in ['bio', 'location', 'phone_number', 'profile_visibility', 'skills', 'achievements', 'teaching_subjects']:
+                    profile_data[key] = value
+                elif key in ['language', 'timezone', 'email_notifications', 'push_notifications',
+                           'study_reminders', 'course_updates', 'achievement_notifications',
+                           'weekly_study_goal', 'preferred_study_time', 'learning_style',
+                           'show_learning_progress', 'show_achievements', 'allow_profile_views']:
+                    preferences_data[key] = value
+                elif key == 'profile_image':
+                    profile_data[key] = value
+
+            # Update user
+            if user_data:
+                user_serializer = UserSerializer(request.user, data=user_data, partial=True)
+                if not user_serializer.is_valid():
+                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                user_serializer.save()
+
+            # Update profile
+            if profile_data:
+                profile_serializer = ProfileSerializer(request.user.profile, data=profile_data, partial=True)
+                if not profile_serializer.is_valid():
+                    return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                profile_serializer.save()
+
+            # Update preferences
+            if preferences_data:
+                preferences_serializer = UserPreferencesSerializer(request.user.preferences, data=preferences_data, partial=True)
+                if not preferences_serializer.is_valid():
+                    return Response(preferences_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                preferences_serializer.save()
+
+            return Response(UserSerializer(request.user).data)
+
+        except Exception as e:
+            return Response({'detail': f'Update failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+## Enhanced Profile Endpoints
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_preferences(request):
+    """Get user's preferences and settings"""
+    serializer = UserPreferencesSerializer(request.user.preferences)
+    return Response(serializer.data)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_user_preferences(request):
+    """Update user's preferences and settings"""
+    serializer = UserPreferencesSerializer(request.user.preferences, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_security_dashboard(request):
+    """Get user's security dashboard data"""
+    # Active sessions
+    sessions = UserSession.objects.filter(user=request.user, is_active=True)
+    sessions_data = UserSessionSerializer(sessions, many=True).data
+
+    # Recent login history (last 10)
+    login_history = LoginHistory.objects.filter(user=request.user)[:10]
+    history_data = LoginHistorySerializer(login_history, many=True).data
+
+    # Account status
+    account_locked = request.user.profile.is_account_locked
+    failed_attempts = request.user.profile.failed_login_attempts
+
+    return Response({
+        'active_sessions': sessions_data,
+        'recent_login_history': history_data,
+        'account_status': {
+            'is_locked': account_locked,
+            'failed_login_attempts': failed_attempts,
+            'lock_expires_at': request.user.profile.account_locked_until
+        },
+        'security_score': calculate_security_score(request.user)
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_session(request, session_id):
+    """Logout a specific session"""
+    try:
+        session = UserSession.objects.get(id=session_id, user=request.user, is_active=True)
+        session.is_active = False
+        session.save()
+
+        # Log the action
+        LoginHistory.objects.create(
+            user=request.user,
+            email=request.user.email,
+            event_type='logout',
+            ip_address=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT'),
+            details={'action': 'user_logout_session', 'session_id': session_id}
+        )
+
+        return Response({'detail': 'Session logged out successfully'})
+    except UserSession.DoesNotExist:
+        return Response({'detail': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_all_sessions(request):
+    """Logout all user sessions except current"""
+    current_session_key = request.session.session_key
+    updated_count = UserSession.objects.filter(
+        user=request.user,
+        is_active=True
+    ).exclude(session_key=current_session_key).update(is_active=False)
+
+    # Log the action
+    LoginHistory.objects.create(
+        user=request.user,
+        email=request.user.email,
+        event_type='logout',
+        ip_address=request.META.get('REMOTE_ADDR'),
+        user_agent=request.META.get('HTTP_USER_AGENT'),
+        details={'action': 'user_logout_all_sessions', 'sessions_ended': updated_count}
+    )
+
+    return Response({'detail': f'Logged out {updated_count} sessions'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_learning_data(request):
+    """Get user's learning progress and achievements"""
+    profile = request.user.profile
+
+    # Mock learning data - will be replaced with real course data
+    learning_data = {
+        'enrolled_courses_count': profile.enrolled_courses_count,
+        'completed_courses_count': profile.completed_courses_count,
+        'skills': profile.skills or [],
+        'achievements': profile.achievements or [],
+        'learning_streak': 0,  # Will be calculated from actual course data
+        'total_study_time': 0,  # Will be calculated from actual progress data
+        'average_progress': 0,  # Will be calculated from enrollments
+        'recent_achievements': [],  # Recent course completions, badges, etc.
+        'upcoming_deadlines': []  # Course deadlines, assignments
+    }
+
+    # Try to get real course data if available
+    try:
+        from courses.models import Enrollment
+        enrollments = Enrollment.objects.filter(student=request.user).select_related('course')
+
+        total_progress = 0
+        completed_count = 0
+        recent_completions = []
+
+        for enrollment in enrollments:
+            total_progress += enrollment.progress_percentage
+            if enrollment.status == 'completed':
+                completed_count += 1
+                if enrollment.completed_at:
+                    recent_completions.append({
+                        'title': enrollment.course.title,
+                        'completed_at': enrollment.completed_at,
+                        'type': 'course_completion'
+                    })
+
+        learning_data.update({
+            'enrolled_courses_count': enrollments.count(),
+            'completed_courses_count': completed_count,
+            'average_progress': total_progress / enrollments.count() if enrollments else 0,
+            'recent_achievements': recent_completions[:5]  # Last 5 completions
+        })
+
+    except ImportError:
+        # Courses app not available yet
+        pass
+
+    return Response(learning_data)
+
+
+def calculate_security_score(user):
+    """Calculate a simple security score for the user"""
+    score = 50  # Base score
+
+    # Profile completion (+10)
+    if user.profile.is_profile_complete:
+        score += 10
+
+    # Password changed recently (+10)
+    if user.profile.last_password_change and (timezone.now() - user.profile.last_password_change).days < 90:
+        score += 10
+
+    # No failed login attempts (+10)
+    if user.profile.failed_login_attempts == 0:
+        score += 10
+
+    # Account not locked (+10)
+    if not user.profile.is_account_locked:
+        score += 10
+
+    # Has profile image (+5)
+    if user.profile.profile_image:
+        score += 5
+
+    # Has phone number (+5)
+    if user.profile.phone_number:
+        score += 5
+
+    return min(score, 100)  # Max 100
 
 
 ## Admin Invitation System (Magic Links)

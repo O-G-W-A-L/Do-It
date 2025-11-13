@@ -90,6 +90,16 @@ class Profile(models.Model):
     enrolled_courses_count = models.PositiveIntegerField(default=0)
     completed_courses_count = models.PositiveIntegerField(default=0)
 
+    # Enhanced profile fields for LMS excellence
+    skills = models.JSONField(default=list, blank=True)  # [{'name': 'Python', 'level': 'expert', 'source': 'course_id'}]
+    achievements = models.JSONField(default=list, blank=True)  # Course completions, badges, certifications
+    teaching_subjects = models.JSONField(default=list, blank=True)  # For instructors: ['Python', 'Data Science']
+    profile_visibility = models.CharField(
+        max_length=20,
+        choices=[('public', 'Public'), ('students', 'Students Only'), ('private', 'Private')],
+        default='public'
+    )
+
     # Instructor-specific fields
     assigned_courses_count = models.PositiveIntegerField(default=0)
     is_active_instructor = models.BooleanField(default=False)
@@ -280,12 +290,90 @@ class UserStatus(models.Model):
     def is_expired(self):
         return self.expires_at and timezone.now() > self.expires_at
 
+
+class UserPreferences(models.Model):
+    """
+    User preferences and settings for LMS experience.
+    """
+    LANGUAGES = [
+        ('en', 'English'),
+        ('es', 'Spanish'),
+        ('fr', 'French'),
+        ('de', 'German'),
+        ('pt', 'Portuguese'),
+        ('zh', 'Chinese'),
+    ]
+
+    TIMEZONES = [
+        ('UTC', 'UTC'),
+        ('America/New_York', 'Eastern Time'),
+        ('America/Chicago', 'Central Time'),
+        ('America/Denver', 'Mountain Time'),
+        ('America/Los_Angeles', 'Pacific Time'),
+        ('Europe/London', 'London'),
+        ('Europe/Paris', 'Paris'),
+        ('Europe/Berlin', 'Berlin'),
+        ('Asia/Tokyo', 'Tokyo'),
+        ('Asia/Shanghai', 'Shanghai'),
+        ('Australia/Sydney', 'Sydney'),
+        ('Africa/Kampala', 'Kampala'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+
+    # Language and localization
+    language = models.CharField(max_length=10, choices=LANGUAGES, default='en')
+    timezone = models.CharField(max_length=50, choices=TIMEZONES, default='UTC')
+
+    # Notification preferences
+    email_notifications = models.BooleanField(default=True)
+    push_notifications = models.BooleanField(default=True)
+    study_reminders = models.BooleanField(default=True)
+    course_updates = models.BooleanField(default=True)
+    achievement_notifications = models.BooleanField(default=True)
+
+    # Learning preferences
+    weekly_study_goal = models.PositiveIntegerField(default=10)  # hours per week
+    preferred_study_time = models.TimeField(null=True, blank=True)  # preferred study time
+    learning_style = models.CharField(
+        max_length=20,
+        choices=[
+            ('visual', 'Visual'),
+            ('auditory', 'Auditory'),
+            ('reading', 'Reading/Writing'),
+            ('kinesthetic', 'Kinesthetic'),
+        ],
+        default='visual'
+    )
+
+    # Privacy preferences
+    show_learning_progress = models.BooleanField(default=True)
+    show_achievements = models.BooleanField(default=True)
+    allow_profile_views = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Preferences"
+
+    class Meta:
+        verbose_name = 'User Preferences'
+        verbose_name_plural = 'User Preferences'
+
+
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+        UserPreferences.objects.create(user=instance)
     else:
         try:
             instance.profile.save()
         except ObjectDoesNotExist:
             Profile.objects.create(user=instance)
+        try:
+            instance.preferences.save()
+        except ObjectDoesNotExist:
+            UserPreferences.objects.create(user=instance)
