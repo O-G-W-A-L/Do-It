@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import UserCreateModal from './UserCreateModal';
+import UserEditModal from './UserEditModal';
 
 const UsersManagement = ({ onSave }) => {
   const { user: currentUser } = useAuth();
@@ -46,8 +48,9 @@ const UsersManagement = ({ onSave }) => {
   const [showBulkActions, setShowBulkActions] = useState(false);
 
   // Modals
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   // Load data on mount
   useEffect(() => {
@@ -215,7 +218,7 @@ const UsersManagement = ({ onSave }) => {
   };
 
   return (
-    <div className="h-full bg-gray-50">
+    <div className="h-full overflow-y-auto bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -224,7 +227,7 @@ const UsersManagement = ({ onSave }) => {
             <p className="text-gray-600 mt-1">Manage user accounts, roles, and permissions</p>
           </div>
           <button
-            onClick={() => setShowUserModal(true)}
+            onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <UserPlus className="w-4 h-4" />
@@ -467,8 +470,8 @@ const UsersManagement = ({ onSave }) => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          setSelectedUser(user);
-                          setShowUserModal(true);
+                          setSelectedUserId(user.id);
+                          setShowEditModal(true);
                         }}
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                         title="View/Edit User"
@@ -505,6 +508,38 @@ const UsersManagement = ({ onSave }) => {
           )}
         </div>
       </div>
+
+      {/* User Create Modal */}
+      <UserCreateModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onUserCreated={(newUser) => {
+          // Add new user to the list and reload stats
+          setUsers(prev => [newUser, ...prev]);
+          loadStats();
+          toast.success('User created successfully');
+          onSave?.();
+        }}
+      />
+
+      {/* User Edit Modal */}
+      <UserEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        userId={selectedUserId}
+        onUserUpdated={(updatedUser) => {
+          if (updatedUser === null) {
+            // User was deleted
+            setUsers(prev => prev.filter(u => u.id !== selectedUserId));
+          } else {
+            // User was updated
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+          }
+          loadStats();
+          toast.success(updatedUser === null ? 'User deleted successfully' : 'User updated successfully');
+          onSave?.();
+        }}
+      />
     </div>
   );
 };
