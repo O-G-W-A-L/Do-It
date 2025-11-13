@@ -133,10 +133,10 @@ export default function CourseLanding() {
                       Dark Theme
                     </button>
 
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                    <Link to="/profile" className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                       <User className="w-4 h-4 mr-3" />
                       View Profile
-                    </button>
+                    </Link>
 
                     <Link to="/settings" className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                       <Settings className="w-4 h-4 mr-3" />
