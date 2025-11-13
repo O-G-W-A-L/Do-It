@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import EmailVerification, Profile
+from .models import EmailVerification, Profile, UserSession, LoginHistory, UserBan, UserStatus
 
 # REGISTRATION & EMAIL VERIFICATION
 class RegisterSerializer(serializers.ModelSerializer):
@@ -178,3 +178,117 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         return obj.get_full_name() or obj.username
+
+# ADMIN SERIALIZERS
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Serializer for admin user creation/editing"""
+    profile = ProfileSerializer()
+    password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password',
+                 'is_active', 'date_joined', 'last_login', 'profile')
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        password = validated_data.pop('password', None)
+
+        user = User.objects.create_user(**validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+
+        # Update profile
+        if profile_data:
+            for attr, value in profile_data.items():
+                setattr(user.profile, attr, value)
+            user.profile.save()
+
+        return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+
+        # Update user fields
+        for attr, value in validated_data.items():
+            if attr == 'password':
+                instance.set_password(value)
+            else:
+                setattr(instance, attr, value)
+        instance.save()
+
+        # Update profile
+        if profile_data:
+            for attr, value in profile_data.items():
+                setattr(instance.profile, attr, value)
+            instance.profile.save()
+
+        return instance
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserSession
+        fields = ('id', 'user', 'user_email', 'user_full_name', 'session_key',
+                 'ip_address', 'user_agent', 'created_at', 'last_activity', 'is_active')
+        read_only_fields = ('id', 'session_key', 'created_at', 'last_activity')
+
+    def get_user_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+class LoginHistorySerializer(serializers.ModelSerializer):
+    user_full_name = serializers.SerializerMethodField()
+    event_display = serializers.CharField(source='get_event_type_display', read_only=True)
+
+    class Meta:
+        model = LoginHistory
+        fields = ('id', 'user', 'user_full_name', 'email', 'event_type', 'event_display',
+                 'ip_address', 'user_agent', 'timestamp', 'details')
+        read_only_fields = ('id', 'timestamp')
+
+    def get_user_full_name(self, obj):
+        if obj.user:
+            return obj.user.get_full_name() or obj.user.username
+        return None
+
+class UserBanSerializer(serializers.ModelSerializer):
+    banned_by_name = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    is_expired = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = UserBan
+        fields = ('id', 'user', 'user_full_name', 'ban_type', 'reason', 'banned_by',
+                 'banned_by_name', 'banned_at', 'expires_at', 'is_active', 'is_expired')
+        read_only_fields = ('id', 'banned_at', 'is_expired')
+
+    def get_banned_by_name(self, obj):
+        if obj.banned_by:
+            return obj.banned_by.get_full_name() or obj.banned_by.username
+        return None
+
+    def get_user_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+class UserStatusSerializer(serializers.ModelSerializer):
+    set_by_name = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    is_expired = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = UserStatus
+        fields = ('id', 'user', 'user_full_name', 'status', 'status_display', 'reason',
+                 'set_by', 'set_by_name', 'set_at', 'expires_at', 'notes', 'is_expired')
+        read_only_fields = ('id', 'set_at', 'is_expired')
+
+    def get_set_by_name(self, obj):
+        if obj.set_by:
+            return obj.set_by.get_full_name() or obj.set_by.username
+        return None
+
+    def get_user_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
