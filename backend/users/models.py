@@ -153,6 +153,133 @@ class Profile(models.Model):
         self.save(update_fields=['is_profile_complete'])
         return self.is_profile_complete
 
+
+class UserSession(models.Model):
+    """
+    Track active user sessions for security management.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=40, unique=True)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-last_activity']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['session_key']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ip_address}"
+
+
+class LoginHistory(models.Model):
+    """
+    Audit trail for user login attempts and security events.
+    """
+    LOGIN_SUCCESS = 'success'
+    LOGIN_FAILED = 'failed'
+    LOGOUT = 'logout'
+    PASSWORD_RESET = 'password_reset'
+    ACCOUNT_LOCKED = 'account_locked'
+
+    EVENT_TYPES = [
+        (LOGIN_SUCCESS, 'Login Success'),
+        (LOGIN_FAILED, 'Login Failed'),
+        (LOGOUT, 'Logout'),
+        (PASSWORD_RESET, 'Password Reset'),
+        (ACCOUNT_LOCKED, 'Account Locked'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_history', null=True, blank=True)
+    email = models.EmailField()  # Store email in case user is deleted
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    details = models.JSONField(blank=True, null=True)  # Additional context
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['email', 'timestamp']),
+            models.Index(fields=['event_type', 'timestamp']),
+        ]
+
+    def __str__(self):
+        return f"{self.email} - {self.get_event_type_display()} - {self.timestamp}"
+
+
+class UserBan(models.Model):
+    """
+    Temporary or permanent user bans with reasons.
+    """
+    BAN_TYPES = [
+        ('temporary', 'Temporary'),
+        ('permanent', 'Permanent'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bans')
+    ban_type = models.CharField(max_length=20, choices=BAN_TYPES, default='temporary')
+    reason = models.TextField()
+    banned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='bans_issued')
+    banned_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-banned_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ban_type} ban"
+
+    @property
+    def is_expired(self):
+        if self.ban_type == 'permanent':
+            return False
+        return self.expires_at and timezone.now() > self.expires_at
+
+
+class UserStatus(models.Model):
+    """
+    Advanced user status management (suspension, expiration, etc.)
+    """
+    STATUS_TYPES = [
+        ('active', 'Active'),
+        ('suspended', 'Suspended'),
+        ('expired', 'Expired'),
+        ('pending_verification', 'Pending Verification'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='status')
+    status = models.CharField(max_length=20, choices=STATUS_TYPES, default='active')
+    reason = models.TextField(blank=True)
+    set_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='status_changes')
+    set_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_status_display()}"
+
+    @property
+    def is_expired(self):
+        return self.expires_at and timezone.now() > self.expires_at
+
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
