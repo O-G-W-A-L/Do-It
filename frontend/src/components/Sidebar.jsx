@@ -6,7 +6,8 @@ import {
   FiCalendar, FiFolder, FiRepeat, FiBarChart2,
   FiPlus, FiLogOut, FiX, FiSettings, FiHelpCircle,
   FiCpu, FiBookOpen, FiUsers, FiMonitor, FiPlayCircle,
-  FiMessageSquare, FiServer, FiBox, FiVideo, FiUserCheck
+  FiMessageSquare, FiServer, FiBox, FiVideo, FiUserCheck,
+  FiUser
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 
@@ -23,6 +24,7 @@ const MENU = [
   { key: 'sandboxes',         route: '/sandboxes',        icon: FiBox,            label: 'Sandboxes' },
   { key: 'video-on-demand',   route: '/video-on-demand',  icon: FiVideo,          label: 'Video on demand' },
   { key: 'peers',             route: '/peers',            icon: FiUsers,          label: 'Peers' },
+  { key: 'profile',           route: '/profile',          icon: FiUser,           label: 'Profile' },
 ];
 
 export default function Sidebar({ currentView, onViewChange, onAddTask, onClose }) {
@@ -65,7 +67,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
               onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
-                  ? 'bg-indigo-100 text-indigo-900 font-medium'
+                  ? 'bg-gray-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -86,7 +88,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
               onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
-                  ? 'bg-indigo-100 text-indigo-900 font-medium'
+                  ? 'bg-gray-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -107,7 +109,7 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
               onClick={() => handleNavigation(route)}
               className={`flex items-center w-full px-3 py-2.5 mb-1 rounded-lg transition-colors ${
                 currentView === key
-                  ? 'bg-indigo-100 text-indigo-900 font-medium'
+                  ? 'bg-gray-100 text-indigo-900 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
