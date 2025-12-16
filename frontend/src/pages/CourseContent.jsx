@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
+import VideoPlayer from '../components/course/player/VideoPlayer';
+import RichContentRenderer from '../components/course/content/RichContentRenderer';
+import LiveProgressTracker from '../components/course/progress/LiveProgressTracker';
+import QuizPlayer from '../components/course/assessment/QuizPlayer';
 import {
   ChevronLeft, ChevronRight, PlayCircle, CheckCircle,
   BookOpen, FileText, Video, HelpCircle
@@ -53,7 +57,13 @@ export default function CourseContent() {
           setCurrentModule(enrollment.current_module);
         }
         if (enrollment.current_lesson) {
-          setCurrentLesson(enrollment.current_lesson);
+          // Find the actual lesson object from modules data
+          const lessonObject = modulesResult
+            .flatMap(module => module.lessons || [])
+            .find(lesson => lesson.id === enrollment.current_lesson);
+          if (lessonObject) {
+            setCurrentLesson(lessonObject);
+          }
         }
 
         // Auto-expand current module
@@ -200,33 +210,39 @@ export default function CourseContent() {
 
             {/* Lesson Content */}
             <div className="prose max-w-none mb-8">
-              {currentLesson.content_type === 'video' && currentLesson.video_url && (
-                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-6">
-                  <div className="text-center">
-                    <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">Video Content</p>
-                    <button className="bg-brand-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-blue-light transition-colors flex items-center gap-2 mx-auto">
-                      <PlayCircle className="w-5 h-5" />
-                      Play Video
-                    </button>
-                  </div>
+              {currentLesson.content_type === 'video' && (
+                <div className="mb-6">
+                  <VideoPlayer
+                    lesson={currentLesson}
+                    onProgress={(progressData) => {
+                      // Handle progress updates
+                      console.log('Video progress:', progressData);
+                    }}
+                    onComplete={(completionData) => {
+                      // Handle lesson completion
+                      console.log('Video completed:', completionData);
+                    }}
+                    className="w-full"
+                  />
                 </div>
               )}
 
               {currentLesson.content_type === 'text' && (
-                <div className="text-gray-700 leading-relaxed">
-                  {currentLesson.content || 'Lesson content will be displayed here.'}
-                </div>
+                <RichContentRenderer content={currentLesson.content} />
               )}
 
               {currentLesson.content_type === 'quiz' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <HelpCircle className="w-6 h-6 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-blue-900">Quiz</h3>
-                  </div>
-                  <p className="text-blue-800">Interactive quiz content will be displayed here.</p>
-                </div>
+                <QuizPlayer
+                  lesson={currentLesson}
+                  onSubmit={(result) => {
+                    console.log('Quiz submitted:', result);
+                    // Handle quiz completion
+                  }}
+                  onProgress={(progressData) => {
+                    console.log('Quiz progress:', progressData);
+                  }}
+                  className="w-full"
+                />
               )}
 
               {currentLesson.content_type === 'assignment' && (
@@ -251,10 +267,14 @@ export default function CourseContent() {
                 <span className="text-sm text-gray-600">
                   Lesson {currentLesson.order} of {currentLesson.module?.total_lessons || 0}
                 </span>
-                <button className="bg-brand-blue text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-blue-light transition-colors flex items-center gap-2">
-                  Mark as Complete
-                  <CheckCircle className="w-4 h-4" />
-                </button>
+                <LiveProgressTracker
+                  enrollment={enrollment}
+                  currentLesson={currentLesson}
+                  onProgressUpdate={(progressData) => {
+                    console.log('Lesson progress updated:', progressData);
+                    // Here you would update the UI to show completion status
+                  }}
+                />
               </div>
 
               <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
