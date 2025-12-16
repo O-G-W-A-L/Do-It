@@ -33,10 +33,10 @@ const ProfilePage = () => {
       setIsLoading(true);
       try {
         const [profileRes, preferencesRes, securityRes, learningRes] = await Promise.allSettled([
-          api.get('/api/users/me/'),
-          api.get('/api/profile/preferences/'),
-          api.get('/api/profile/security/'),
-          api.get('/api/profile/learning-data/')
+          api.get('/api/auth/users/me/'),
+          api.get('/api/auth/profile/preferences/'),
+          api.get('/api/auth/profile/security/'),
+          api.get('/api/auth/profile/learning-data/')
         ]);
 
         if (profileRes.status === 'fulfilled') {
@@ -84,7 +84,7 @@ const ProfilePage = () => {
 
     try {
       // Update backend
-      const { data } = await api.patch('/api/users/me/', formData);
+      const { data } = await api.patch('/api/auth/users/me/', formData);
       console.log('After save profile.image:', data.profile_image);
 
       // Update state and bust cache
