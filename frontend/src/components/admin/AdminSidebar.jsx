@@ -8,7 +8,8 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,6 +25,7 @@ const AdminSidebar = ({ activeSection, onSectionChange, onLogout }) => {
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'test-video', label: 'Test Video', icon: Video },
   ];
 
   return (
