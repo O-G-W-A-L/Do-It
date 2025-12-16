@@ -3,9 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminBottomBar from '../components/admin/AdminBottomBar';
-import AdminHelpPanel from '../components/admin/AdminHelpPanel';
 import CourseBuilder from '../components/admin/CourseBuilder';
 import UsersManagement from '../components/admin/UsersManagement';
+import TestVideoPlayer from '../components/TestVideoPlayer';
 
 /**
  * Full Admin Portal
@@ -78,6 +78,8 @@ export default function AdminPortal() {
             <p className="text-gray-600">Dashboard metrics will be implemented with real analytics data.</p>
           </div>
         );
+      case 'test-video': // New case for testing
+        return <TestVideoPlayer />;
       default:
         return (
           <div className="flex items-center justify-center h-full">
@@ -121,8 +123,7 @@ export default function AdminPortal() {
         )}
       </div>
 
-      {/* RIGHT HELP PANEL - Hidden for Users section to give full width */}
-      {activeSection !== 'users' && <AdminHelpPanel section={activeSection} />}
+
     </div>
   );
 }
