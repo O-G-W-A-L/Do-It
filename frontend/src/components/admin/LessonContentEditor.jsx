@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { Upload, Video, FileText, HelpCircle, Save } from 'lucide-react';
 import Button from '../ui/Button';
-import VideoPlayer from '../course/player/VideoPlayer';
+import VideoLinkDisplay from '../course/VideoLinkDisplay';
 
 const LessonContentEditor = ({ lesson, onSave, onChange }) => {
   const [content, setContent] = useState(lesson?.content || '');
@@ -79,20 +79,14 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
 
             {videoUrl && (
               <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Video Preview</h4>
-                <div className="bg-gray-50 rounded p-2">
-                  <VideoPlayer
-                    lesson={{
-                      id: 'preview',
-                      title: 'Video Preview',
-                      video_url: videoUrl,
-                      content_type: 'video'
-                    }}
-                    className="w-full"
-                  />
-                </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Video Link Preview</h4>
+                <VideoLinkDisplay
+                  videoUrl={videoUrl}
+                  title="Lesson Video"
+                  className="w-full"
+                />
                 <p className="text-xs text-gray-500 mt-2">
-                  This is how the video will appear to students
+                  This is how the video link will appear to students
                 </p>
               </div>
             )}
