@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
+import FileUpload from '../ui/FileUpload';
 import { coursesService } from '../../services/courses';
 
 const CourseCreationModal = ({ isOpen, onClose, onCourseCreated }) => {
@@ -23,10 +24,50 @@ const CourseCreationModal = ({ isOpen, onClose, onCourseCreated }) => {
     setError(null);
 
     try {
-      const result = await coursesService.createCourse(formData);
+      // Create course first
+      const courseData = {
+        title: formData.title,
+        description: formData.description,
+        short_description: formData.short_description,
+        level: formData.level,
+        duration_weeks: formData.duration_weeks,
+        is_free: formData.is_free,
+        price: formData.is_free ? 0 : formData.price
+      };
+
+      const result = await coursesService.createCourse(courseData);
       if (result.success) {
-        onCourseCreated(result.data);
+        const newCourse = result.data;
+
+        // Upload thumbnail if provided
+        if (formData.thumbnail && newCourse.id) {
+          try {
+            const formDataWithFile = new FormData();
+            formDataWithFile.append('thumbnail', formData.thumbnail);
+
+            // Use fetch directly for file upload since coursesService.createCourse doesn't handle files
+            const response = await fetch(`/api/courses/courses/${newCourse.id}/upload_thumbnail/`, {
+              method: 'POST',
+              body: formDataWithFile,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+              }
+            });
+
+            if (response.ok) {
+              const uploadResult = await response.json();
+              newCourse.thumbnail = uploadResult.thumbnail;
+            } else {
+              console.warn('Thumbnail upload failed, but course was created');
+            }
+          } catch (uploadError) {
+            console.warn('Thumbnail upload failed, but course was created:', uploadError);
+          }
+        }
+
+        onCourseCreated(newCourse);
         onClose();
+
         // Reset form
         setFormData({
           title: '',
@@ -40,7 +81,8 @@ const CourseCreationModal = ({ isOpen, onClose, onCourseCreated }) => {
       } else {
         setError(result.error);
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to create course:', error);
       setError('Failed to create course');
     } finally {
       setLoading(false);
@@ -176,6 +218,23 @@ const CourseCreationModal = ({ isOpen, onClose, onCourseCreated }) => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Thumbnail */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Course Thumbnail
+          </label>
+          <FileUpload
+            onFileSelect={(file) => handleInputChange('thumbnail', file)}
+            accept="image/*"
+            maxSize={5 * 1024 * 1024} // 5MB
+            placeholder="Upload course thumbnail"
+            showPreview={true}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Recommended: 1280x720px, JPEG/PNG/WebP, max 5MB
+          </p>
         </div>
 
         {/* Actions */}
