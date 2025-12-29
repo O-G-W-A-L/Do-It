@@ -6,6 +6,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
 
 from .models import Course, Module, Lesson, Enrollment, CourseReview
 from .serializers import (
@@ -175,6 +178,45 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         serializer = CourseReviewSerializer(review)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], parser_classes=[parsers.MultiPartParser])
+    def upload_thumbnail(self, request, pk=None):
+        """Upload course thumbnail (instructor only)"""
+        course = self.get_object()
+
+        if course.instructor != request.user and not request.user.profile.is_admin:
+            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        if 'thumbnail' not in request.FILES:
+            return Response({'detail': 'No thumbnail file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        thumbnail_file = request.FILES['thumbnail']
+
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+        if thumbnail_file.content_type not in allowed_types:
+            return Response({'detail': 'Invalid file type. Only JPEG, PNG, and WebP are allowed'},
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file size (max 5MB)
+        if thumbnail_file.size > 5 * 1024 * 1024:
+            return Response({'detail': 'File too large. Maximum size is 5MB'},
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        # Delete old thumbnail if exists
+        if course.thumbnail:
+            try:
+                if default_storage.exists(course.thumbnail.name):
+                    default_storage.delete(course.thumbnail.name)
+            except Exception:
+                pass  # Ignore deletion errors
+
+        # Save new thumbnail
+        course.thumbnail = thumbnail_file
+        course.save()
+
+        serializer = self.get_serializer(course)
+        return Response(serializer.data)
 
 
 class ModuleViewSet(viewsets.ModelViewSet):
