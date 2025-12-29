@@ -57,7 +57,23 @@ export const coursesService = {
   // Course creation and management (instructors/admins)
   async createCourse(courseData) {
     try {
-      const response = await api.post('/api/courses/courses/', courseData);
+      // Check if we have a file upload (thumbnail)
+      const hasFile = courseData.thumbnail instanceof File;
+
+      let response;
+      if (hasFile) {
+        // Use FormData for file uploads
+        const formData = apiUtils.createFormData(courseData);
+        response = await api.post('/api/courses/courses/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      } else {
+        // Regular JSON request
+        response = await api.post('/api/courses/courses/', courseData);
+      }
+
       return {
         success: true,
         data: response.data
