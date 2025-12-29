@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -361,6 +361,21 @@ class UserPreferences(models.Model):
     class Meta:
         verbose_name = 'User Preferences'
         verbose_name_plural = 'User Preferences'
+
+
+@receiver(pre_delete, sender=User)
+def cleanup_user_related_records(sender, instance, **kwargs):
+    """
+    Clean up related records before user deletion to prevent foreign key constraint errors.
+    Surgical fix for Django admin bulk delete issues.
+    """
+    # Delete records that might cause constraint violations
+    instance.verifications.all().delete()  # EmailVerification
+    instance.sent_invitations.all().delete()  # AdminInvitation
+    instance.sessions.all().delete()  # UserSession
+    instance.login_history.all().delete()  # LoginHistory
+    instance.bans.all().delete()  # UserBan
+    # Profile, Preferences, and Status deleted via CASCADE
 
 
 @receiver(post_save, sender=User)
