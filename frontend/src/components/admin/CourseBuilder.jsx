@@ -22,6 +22,7 @@ import Button from '../ui/Button';
 import { coursesService } from '../../services/courses';
 import CourseCreationModal from './CourseCreationModal';
 import LessonContentEditor from './LessonContentEditor';
+import VideoLinkDisplay from '../course/VideoLinkDisplay';
 
 const CourseBuilder = ({ onSave, onPublish }) => {
   const [courses, setCourses] = useState([]);
@@ -777,20 +778,21 @@ const CourseBuilder = ({ onSave, onPublish }) => {
 
                 {/* Lesson Content Preview */}
                 <div className="prose prose-sm max-w-none">
-                  {currentLesson.content ? (
-                    <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                  ) : (currentLesson.content_type === 'video' || currentLesson.type === 'video') && currentLesson.video_url ? (
+                  {(currentLesson.content_type === 'video' || currentLesson.type === 'video') && currentLesson.video_url ? (
                     <div className="space-y-4">
-                      <div className="aspect-video bg-gray-200 rounded flex items-center justify-center">
-                        <div className="text-center">
-                          <Video className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">Video: {currentLesson.video_url}</p>
-                        </div>
-                      </div>
+                      <VideoLinkDisplay
+                        videoUrl={currentLesson.video_url}
+                        title="Lesson Video"
+                        className="w-full"
+                      />
                       {currentLesson.content && (
-                        <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                        <div className="mt-4">
+                          <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                        </div>
                       )}
                     </div>
+                  ) : currentLesson.content ? (
+                    <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
                   ) : (currentLesson.content_type === 'quiz' || currentLesson.type === 'quiz') ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
