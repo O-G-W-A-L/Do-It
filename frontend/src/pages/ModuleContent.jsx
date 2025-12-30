@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSelectedCourseContext } from '../contexts/SelectedCourseContext';
+import { progressService } from '../services/progress';
 import {
   ChevronLeft, ChevronRight, PlayCircle, CheckCircle,
   BookOpen, FileText, Video, HelpCircle, ArrowLeft
@@ -116,6 +117,51 @@ export default function ModuleContent() {
     if (currentIndex > 0) {
       const prevModule = modules[currentIndex - 1];
       navigate(`/courses/${courseId}/modules/${prevModule.id}`);
+    }
+  };
+
+  // Lesson navigation within module
+  const navigateToPreviousLesson = () => {
+    if (!module || !module.lessons || !currentLesson) return;
+
+    const currentIndex = module.lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentIndex > 0) {
+      setCurrentLesson(module.lessons[currentIndex - 1]);
+    }
+  };
+
+  const navigateToNextLesson = () => {
+    if (!module || !module.lessons || !currentLesson) return;
+
+    const currentIndex = module.lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentIndex < module.lessons.length - 1) {
+      setCurrentLesson(module.lessons[currentIndex + 1]);
+    }
+  };
+
+  // Mark lesson as complete
+  const markLessonComplete = async () => {
+    if (!currentLesson || !courseId) return;
+
+    try {
+      const result = await progressService.markLessonComplete(courseId, currentLesson.id);
+      if (result.success) {
+        // Update lesson status in local state
+        const updatedLessons = module.lessons.map(lesson =>
+          lesson.id === currentLesson.id
+            ? { ...lesson, completed: true }
+            : lesson
+        );
+        setModule({ ...module, lessons: updatedLessons });
+
+        // Show success message
+        // You could add a toast notification here
+        console.log('Lesson marked as complete');
+      } else {
+        console.error('Failed to mark lesson complete:', result.error);
+      }
+    } catch (error) {
+      console.error('Error marking lesson complete:', error);
     }
   };
 
@@ -313,22 +359,33 @@ export default function ModuleContent() {
 
               {/* Lesson Actions */}
               <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-                <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <button
+                  onClick={navigateToPreviousLesson}
+                  disabled={!currentLesson || !module.lessons || module.lessons.findIndex(l => l.id === currentLesson.id) === 0}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
                   <ChevronLeft className="w-5 h-5" />
                   Previous Lesson
                 </button>
 
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-600">
-                    Lesson {currentLesson.order} of {module.lessons?.length || 0}
+                    Lesson {currentLesson?.order || 1} of {module.lessons?.length || 0}
                   </span>
-                  <button className="bg-brand-blue text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-blue-light transition-colors flex items-center gap-2">
+                  <button
+                    onClick={markLessonComplete}
+                    className="bg-brand-blue text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-blue-light transition-colors flex items-center gap-2"
+                  >
                     Mark as Complete
                     <CheckCircle className="w-4 h-4" />
                   </button>
                 </div>
 
-                <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <button
+                  onClick={navigateToNextLesson}
+                  disabled={!currentLesson || !module.lessons || module.lessons.findIndex(l => l.id === currentLesson.id) === module.lessons.length - 1}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
                   Next Lesson
                   <ChevronRight className="w-5 h-5" />
                 </button>
