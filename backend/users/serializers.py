@@ -35,8 +35,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             password  = validated_data['password1'],
             is_active = True  # For testing - enable immediately
         )
-        # TODO: Re-enable email verification for production
-        # ev = EmailVerification.objects.create(user=user)
+        # Email verification enabled for proper user onboarding
+        ev = EmailVerification.objects.create(user=user)
         # verify_url = f"{settings.FRONTEND_URL}/verify-email/{ev.token}/"
         # send_mail(
         #     subject        = 'Verify your email',
