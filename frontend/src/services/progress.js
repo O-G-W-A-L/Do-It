@@ -56,7 +56,11 @@ export const progressService = {
 
   async markLessonComplete(courseId, lessonId, completionData = {}) {
     try {
-      const response = await api.post(`/api/progress/course/${courseId}/lesson/${lessonId}/complete/`, completionData);
+      // Use the enhanced update_progress endpoint that accepts course-lesson combo
+      const response = await api.post(`/api/progress/course-${courseId}-lesson-${lessonId}/update_progress/`, {
+        status: 'completed',
+        ...completionData
+      });
       return {
         success: true,
         data: response.data

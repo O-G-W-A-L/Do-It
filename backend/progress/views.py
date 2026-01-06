@@ -74,9 +74,24 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def update_progress(self, request, pk=None):
-        """Update lesson progress"""
-        progress = self.get_object()
+        """Update lesson progress - accepts progress_id or course-lesson combo"""
         user = request.user
+
+        # Check if pk is a course-lesson combo (format: course-{id}-lesson-{id})
+        if pk and '-' in pk and pk.startswith('course-') and 'lesson-' in pk:
+            try:
+                # Parse course-lesson combo
+                parts = pk.split('-')
+                course_id = int(parts[1])
+                lesson_id = int(parts[3])
+
+                # Get or create progress record
+                progress = self._get_or_create_progress(user, course_id, lesson_id)
+            except (ValueError, IndexError):
+                return Response({'detail': 'Invalid course-lesson format'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Normal progress record ID
+            progress = self.get_object()
 
         # Only student who owns progress or instructor can update
         if not (progress.student == user or
@@ -104,8 +119,85 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
         # Update student analytics
         self._update_student_analytics(progress.student, progress.lesson.module.course)
 
-        serializer = self.get_serializer(progress)
-        return Response(serializer.data)
+        # Return completion navigation data if this was a completion
+        response_data = self.get_serializer(progress).data
+        if progress_data.get('status') == 'completed':
+            response_data.update(self._get_completion_navigation(progress))
+
+        return Response(response_data)
+
+    def _get_or_create_progress(self, user, course_id, lesson_id):
+        """Get existing progress or create new one for lesson"""
+        course = get_object_or_404(Course, id=course_id)
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        # Verify user can access this lesson
+        if not self._can_access_lesson(user, lesson):
+            raise serializers.ValidationError("Cannot access this lesson")
+
+        # Find existing progress or create new
+        progress, created = LessonProgress.objects.get_or_create(
+            student=user,
+            lesson=lesson,
+            defaults={
+                'first_accessed': timezone.now(),
+                'last_accessed': timezone.now(),
+                'status': 'not_started',
+                'progress_percentage': 0
+            }
+        )
+
+        return progress
+
+    def _get_completion_navigation(self, progress):
+        """Get navigation data for lesson completion"""
+        lesson = progress.lesson
+        module = lesson.module
+        course = module.course
+
+        # Find next lesson in current module
+        next_lesson = Lesson.objects.filter(
+            module=module,
+            order__gt=lesson.order
+        ).order_by('order').first()
+
+        # If no next lesson in module, find next module
+        next_module = None
+        if not next_lesson:
+            next_module = Module.objects.filter(
+                course=course,
+                order__gt=module.order
+            ).order_by('order').first()
+
+            # If next module exists, get its first lesson
+            if next_module:
+                next_lesson = Lesson.objects.filter(
+                    module=next_module
+                ).order_by('order').first()
+
+        # Check if course is completed
+        total_lessons = course.total_lessons
+        completed_lessons = LessonProgress.objects.filter(
+            student=progress.student,
+            lesson__module__course=course,
+            status='completed'
+        ).count()
+
+        course_completed = completed_lessons >= total_lessons
+
+        return {
+            'next_lesson': {
+                'id': next_lesson.id,
+                'title': next_lesson.title,
+                'module_title': next_lesson.module.title
+            } if next_lesson else None,
+            'next_module': {
+                'id': next_module.id,
+                'title': next_module.title
+            } if next_module else None,
+            'course_completed': course_completed,
+            'completion_percentage': (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
+        }
 
     def _can_access_lesson(self, user, lesson):
         """Check if user can access lesson"""
