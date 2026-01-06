@@ -35,6 +35,11 @@ class CourseViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Course.objects.all()
 
+        # Handle anonymous users
+        if not user.is_authenticated:
+            # Anonymous users can only see published courses
+            return queryset.filter(status='published').order_by('-created_at')
+
         # Filter by status for non-instructors
         if not user.profile.is_instructor and not user.profile.is_admin:
             # Students can see published courses + courses they're enrolled in
@@ -57,6 +62,12 @@ class CourseViewSet(viewsets.ModelViewSet):
         elif self.action == 'list':
             return CourseListSerializer
         return CourseSerializer
+
+    def get_permissions(self):
+        """Allow anonymous users to view published courses"""
+        if self.action == 'list':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         """Ensure instructor is assigned correctly"""
