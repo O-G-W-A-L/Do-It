@@ -169,7 +169,21 @@ const CourseBuilder = ({ onSave, onPublish }) => {
 
   const saveLessonContent = async (lessonId, contentData) => {
     try {
-      const result = await coursesService.updateLesson(lessonId, contentData);
+      // Find the current lesson data and merge with content updates
+      const module = modules.find(m => m.lessons.some(l => l.id === lessonId));
+      const currentLesson = module?.lessons.find(l => l.id === lessonId);
+
+      if (!currentLesson) {
+        throw new Error('Lesson not found');
+      }
+
+      // Merge current lesson data with content updates
+      const completeLessonData = {
+        ...currentLesson,
+        ...contentData
+      };
+
+      const result = await coursesService.updateLesson(lessonId, completeLessonData);
       if (result.success) {
         // Update local state with saved data
         const moduleId = modules.find(m => m.lessons.some(l => l.id === lessonId))?.id;
