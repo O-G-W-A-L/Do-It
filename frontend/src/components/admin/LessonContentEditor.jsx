@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
-import { Upload, Video, FileText, HelpCircle, Save } from 'lucide-react';
+import { Upload, Video, FileText, HelpCircle, Save, Eye, Edit } from 'lucide-react';
 import Button from '../ui/Button';
 import VideoLinkDisplay from '../course/VideoLinkDisplay';
 
 const LessonContentEditor = ({ lesson, onSave, onChange }) => {
-  const [content, setContent] = useState(lesson?.content || '');
+  const [content, setContent] = useState(lesson?.content?.markdown || '');
   const [videoUrl, setVideoUrl] = useState(lesson?.video_url || '');
   const [attachments, setAttachments] = useState(lesson?.attachments || []);
   const [saving, setSaving] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
-    setContent(lesson?.content || '');
+    setContent(lesson?.content?.markdown || '');
     setVideoUrl(lesson?.video_url || '');
     setAttachments(lesson?.attachments || []);
   }, [lesson]);
@@ -26,7 +27,7 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
   const handleContentChange = (value) => {
     setContent(value);
     onChange?.({
-      content: value,
+      content: { markdown: value },
       video_url: videoUrl,
       attachments
     });
@@ -35,7 +36,7 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
   const handleVideoUrlChange = (url) => {
     setVideoUrl(url);
     onChange?.({
-      content,
+      content: { markdown: content },
       video_url: url,
       attachments
     });
@@ -45,7 +46,7 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
     setSaving(true);
     try {
       await onSave?.({
-        content,
+        content: { markdown: content },
         video_url: videoUrl,
         attachments
       });
@@ -170,10 +171,33 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
       default: // text
         return (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
                 Lesson Content
               </label>
+              <Button
+                onClick={() => setPreviewMode(!previewMode)}
+                variant="outline"
+                size="sm"
+                icon={previewMode ? Edit : Eye}
+              >
+                {previewMode ? 'Edit' : 'Preview'}
+              </Button>
+            </div>
+
+            {previewMode ? (
+              <div className="lesson-content prose prose-lg max-w-none border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <MDEditor.Markdown
+                  source={content || 'Lesson content will be displayed here.'}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'inherit',
+                    fontSize: '16px',
+                    lineHeight: '1.7'
+                  }}
+                />
+              </div>
+            ) : (
               <MDEditor
                 value={content}
                 onChange={handleContentChange}
@@ -184,7 +208,7 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
                   placeholder: "Write your lesson content here..."
                 }}
               />
-            </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
