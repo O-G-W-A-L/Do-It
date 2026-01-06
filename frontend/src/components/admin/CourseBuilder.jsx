@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import MDEditor from '@uiw/react-md-editor';
 import {
   BookOpen,
   Plus,
@@ -767,99 +768,7 @@ const CourseBuilder = ({ onSave, onPublish }) => {
         )}
       </div>
 
-      {/* Live Preview Panel */}
-      <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">Live Preview</h3>
-          <p className="text-sm text-gray-600">How students will see it</p>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {(() => {
-            const currentLesson = getCurrentLesson();
-            return currentLesson ? (
-              <div className="bg-gray-50 rounded-lg p-4 min-h-full">
-                {/* Lesson Preview Header */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{getLessonTypeIcon(currentLesson.content_type || currentLesson.type)}</span>
-                    <h4 className="text-lg font-semibold text-gray-900">{currentLesson.title}</h4>
-                  </div>
-                  {currentLesson.description && (
-                    <p className="text-sm text-gray-600">{currentLesson.description}</p>
-                  )}
-                </div>
-
-                {/* Lesson Content Preview */}
-                <div className="prose prose-sm max-w-none">
-                  {(currentLesson.content_type === 'video' || currentLesson.type === 'video') && currentLesson.video_url ? (
-                    <div className="space-y-4">
-                      <VideoLinkDisplay
-                        videoUrl={currentLesson.video_url}
-                        title="Lesson Video"
-                        className="w-full"
-                      />
-                      {currentLesson.content && (
-                        <div className="mt-4">
-                          <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                        </div>
-                      )}
-                    </div>
-                  ) : currentLesson.content ? (
-                    <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                  ) : (currentLesson.content_type === 'quiz' || currentLesson.type === 'quiz') ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <HelpCircle className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-gray-900">Quiz</span>
-                      </div>
-                      {currentLesson.content ? (
-                        <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                      ) : (
-                        <p className="text-gray-600 italic">Quiz instructions will appear here</p>
-                      )}
-                    </div>
-                  ) : (currentLesson.content_type === 'assignment' || currentLesson.type === 'assignment') ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-gray-900">Assignment</span>
-                      </div>
-                      {currentLesson.content ? (
-                        <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                      ) : (
-                        <p className="text-gray-600 italic">Assignment details will appear here</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Edit3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Lesson content will appear here</p>
-                      <p className="text-sm text-gray-500 mt-1">Start editing to see the preview</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Preview Footer */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Lesson {currentLesson.order || 1}</span>
-                    <span>{currentLesson.content_type || currentLesson.type || 'text'}</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-100 rounded-lg p-4 min-h-full flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <Eye className="w-8 h-8 mx-auto mb-2" />
-                  <p>Select a lesson to preview</p>
-                  <p className="text-xs mt-1">Changes update in real-time</p>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </div>
 
       {/* Course Creation Modal */}
       <CourseCreationModal
