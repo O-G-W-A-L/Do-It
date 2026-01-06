@@ -99,12 +99,9 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                preview="edit"
+                preview="live"
                 hideToolbar={false}
                 data-color-mode="light"
-                textareaProps={{
-                  placeholder: "Add video description, transcript, or additional notes..."
-                }}
               />
             </div>
           </div>
@@ -124,12 +121,9 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                preview="edit"
+                preview="live"
                 hideToolbar={false}
                 data-color-mode="light"
-                textareaProps={{
-                  placeholder: "Add quiz instructions, questions will be created separately..."
-                }}
               />
             </div>
           </div>
@@ -146,12 +140,9 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                preview="edit"
+                preview="live"
                 hideToolbar={false}
                 data-color-mode="light"
-                textareaProps={{
-                  placeholder: "Describe the assignment requirements, objectives, and submission guidelines..."
-                }}
               />
             </div>
 
@@ -201,12 +192,9 @@ const LessonContentEditor = ({ lesson, onSave, onChange }) => {
               <MDEditor
                 value={content}
                 onChange={handleContentChange}
-                preview="edit"
+                preview="live"
                 hideToolbar={false}
                 data-color-mode="light"
-                textareaProps={{
-                  placeholder: "Write your lesson content here..."
-                }}
               />
             )}
 
