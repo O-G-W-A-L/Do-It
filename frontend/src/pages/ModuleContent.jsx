@@ -4,6 +4,7 @@ import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSelectedCourseContext } from '../contexts/SelectedCourseContext';
 import { progressService } from '../services/progress';
+import MDEditor from '@uiw/react-md-editor';
 import {
   ChevronLeft, ChevronRight, PlayCircle, CheckCircle,
   BookOpen, FileText, Video, HelpCircle, ArrowLeft
@@ -23,8 +24,12 @@ export default function ModuleContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Find enrollment for this course
-  const enrollment = enrollments.find(e => e.course === parseInt(courseId));
+  // Find enrollment for this course - handle different data structures
+  const enrollment = enrollments.find(e =>
+    e.course === parseInt(courseId) ||
+    e.course?.id === parseInt(courseId) ||
+    e.course_id === parseInt(courseId)
+  );
 
   // Load module data
   const loadModuleContent = useCallback(async () => {
@@ -34,8 +39,12 @@ export default function ModuleContent() {
     setError(null);
 
     try {
-      // Validate enrollment for this course
-      const enrollment = enrollments.find(e => e.course === parseInt(courseId));
+      // Validate enrollment for this course - handle different data structures
+      const enrollment = enrollments.find(e =>
+        e.course === parseInt(courseId) ||
+        e.course?.id === parseInt(courseId) ||
+        e.course_id === parseInt(courseId)
+      );
       if (!enrollment) {
         setError('You are not enrolled in this course');
         setLoading(false);
@@ -331,8 +340,16 @@ export default function ModuleContent() {
                 )}
 
                 {currentLesson.content_type === 'text' && (
-                  <div className="text-gray-700 leading-relaxed">
-                    {currentLesson.content || 'Lesson content will be displayed here.'}
+                  <div className="lesson-content prose prose-lg max-w-none">
+                    <MDEditor.Markdown
+                      source={currentLesson.content?.markdown || 'Lesson content will be displayed here.'}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: 'inherit',
+                        fontSize: '16px',
+                        lineHeight: '1.7'
+                      }}
+                    />
                   </div>
                 )}
 
