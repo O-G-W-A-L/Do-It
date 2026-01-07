@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { usePayments } from '../hooks/usePayments.js';
+import { useAuth } from './AuthContext';
 
 const PaymentContext = createContext();
 
 export function PaymentProvider({ children }) {
+  const { user } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [pricingPlans, setPricingPlans] = useState([]);
   const [paymentIntent, setPaymentIntent] = useState(null);
@@ -11,22 +13,24 @@ export function PaymentProvider({ children }) {
   // Use the payments hook
   const paymentsHook = usePayments();
 
-  // Initialize payment data on mount
+  // Initialize payment data only for authenticated users
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Load subscriptions and pricing plans in parallel
-        await Promise.all([
-          paymentsHook.getSubscriptions(),
-          loadPricingPlans()
-        ]);
-      } catch (error) {
-        console.error('Failed to load payment data:', error);
-      }
-    };
+    if (user?.id) {
+      const loadInitialData = async () => {
+        try {
+          // Load subscriptions and pricing plans in parallel
+          await Promise.all([
+            paymentsHook.getSubscriptions(),
+            loadPricingPlans()
+          ]);
+        } catch (error) {
+          console.error('Failed to load payment data:', error);
+        }
+      };
 
-    loadInitialData();
-  }, []);
+      loadInitialData();
+    }
+  }, [user?.id]);
 
   // Load pricing plans
   const loadPricingPlans = useCallback(async () => {
