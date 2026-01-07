@@ -12,7 +12,9 @@ const api = axios.create({
 // Request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    // Get tab-specific token
+    const tabId = sessionStorage.getItem('tabId');
+    const token = tabId ? localStorage.getItem(`access_token_${tabId}`) : localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,7 +41,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        // Get tab-specific refresh token
+        const tabId = sessionStorage.getItem('tabId');
+        const refreshToken = tabId ? localStorage.getItem(`refresh_token_${tabId}`) : localStorage.getItem('refresh_token');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -50,10 +54,17 @@ api.interceptors.response.use(
           { refresh: refreshToken }
         );
 
-        // Save new tokens
-        localStorage.setItem('access_token', data.access);
-        if (data.refresh) {
-          localStorage.setItem('refresh_token', data.refresh);
+        // Save new tokens with tab-specific keys
+        if (tabId) {
+          localStorage.setItem(`access_token_${tabId}`, data.access);
+          if (data.refresh) {
+            localStorage.setItem(`refresh_token_${tabId}`, data.refresh);
+          }
+        } else {
+          localStorage.setItem('access_token', data.access);
+          if (data.refresh) {
+            localStorage.setItem('refresh_token', data.refresh);
+          }
         }
 
         // Retry original request with new token
@@ -71,8 +82,14 @@ api.interceptors.response.use(
         }
 
         // For other requests, refresh failed, clear tokens and redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        const tabId = sessionStorage.getItem('tabId');
+        if (tabId) {
+          localStorage.removeItem(`access_token_${tabId}`);
+          localStorage.removeItem(`refresh_token_${tabId}`);
+        } else {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        }
 
         // Dispatch custom event for auth context to handle logout
         window.dispatchEvent(new CustomEvent('auth:logout'));

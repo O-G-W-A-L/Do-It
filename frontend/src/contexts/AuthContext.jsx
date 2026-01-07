@@ -11,8 +11,23 @@ export function AuthProvider({ children }) {
   const [infoMessage, setInfoMessage] = useState(null);
   const navigate                  = useNavigate();
 
+  // Generate unique tab ID for session isolation
+  const tabId = React.useMemo(() => {
+    let id = sessionStorage.getItem('tabId');
+    if (!id) {
+      id = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('tabId', id);
+    }
+    return id;
+  }, []);
+
+  // Tab-specific localStorage helpers
+  const getTabStorage = (key) => localStorage.getItem(`${key}_${tabId}`);
+  const setTabStorage = (key, value) => localStorage.setItem(`${key}_${tabId}`, value);
+  const removeTabStorage = (key) => localStorage.removeItem(`${key}_${tabId}`);
+
   const fetchUser = async () => {
-    const token = localStorage.getItem('access_token');
+    const token = getTabStorage('access_token');
     if (!token) {
       setLoading(false);
       return;
@@ -61,8 +76,8 @@ export function AuthProvider({ children }) {
     try {
       const result = await authService.login({ username, password });
       if (result.success) {
-        localStorage.setItem('access_token', result.data.access);
-        localStorage.setItem('refresh_token', result.data.refresh);
+        setTabStorage('access_token', result.data.access);
+        setTabStorage('refresh_token', result.data.refresh);
         await fetchUser(); // This will update the user state
 
         // Note: Role-based redirect will happen in useEffect below
@@ -146,8 +161,8 @@ export function AuthProvider({ children }) {
     try {
       const result = await authService.googleLogin(token);
       if (result.success) {
-        localStorage.setItem('access_token', result.data.access);
-        localStorage.setItem('refresh_token', result.data.refresh);
+        setTabStorage('access_token', result.data.access);
+        setTabStorage('refresh_token', result.data.refresh);
         await fetchUser(); // This will update the user state
 
         // Note: Role-based redirect will happen in useEffect above
@@ -160,8 +175,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    removeTabStorage('access_token');
+    removeTabStorage('refresh_token');
     setUser(null);
     // Clear any cached enrollment/course data
     if (window.courseContextClearData) {
