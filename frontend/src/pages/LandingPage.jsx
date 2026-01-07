@@ -7,8 +7,6 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const videoRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Progressive scroll effect
   useEffect(() => {
@@ -32,16 +30,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleVideo = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
+
 
   // Minimal, impactful features
   const features = [
@@ -129,36 +118,24 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section - Ultra clean with video background */}
+      {/* Hero Section - Ultra clean with gradient background */}
       <section className="min-h-screen relative flex items-center justify-center overflow-hidden">
-        {/* Video Background */}
-        <div className="absolute inset-0">
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            muted
-            loop
-            playsInline
-            poster="/api/placeholder/1920/1080"
-          >
-            <source src="/api/placeholder/1920/1080" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/40"></div>
-        </div>
+        {/* Beige Background */}
+        <div className="absolute inset-0 bg-amber-50"></div>
 
 
 
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           {/* Main Headline - Powerful and direct */}
-          <h1 className="font-bold text-5xl md:text-7xl lg:text-8xl text-white mb-8 tracking-tight leading-tight">
+          <h1 className="font-bold text-5xl md:text-7xl lg:text-8xl text-gray-900 mb-8 tracking-tight leading-tight">
             F**K OVER<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">LEARNING.</span><br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">LEARNING.</span><br />
             START<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-300 to-white">BUILDING.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-600 to-gray-900">BUILDING.</span>
           </h1>
 
           {/* Subheadline - Minimal and impactful */}
-          <p className="text-xl md:text-2xl text-white/90 mb-12 font-light max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-700 mb-12 font-light max-w-2xl mx-auto leading-relaxed">
             Transform from tutorial follower to product builder in weeks, not years.
           </p>
 
@@ -175,24 +152,24 @@ export default function LandingPage() {
           {/* Social Proof - Minimal stats */}
           <div className="mt-20 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">2.3x</div>
-              <div className="text-white/60 text-sm mt-1">Faster career growth</div>
+              <div className="text-3xl font-bold text-gray-900">2.3x</div>
+              <div className="text-gray-600 text-sm mt-1">Faster career growth</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">94%</div>
-              <div className="text-white/60 text-sm mt-1">Placement rate</div>
+              <div className="text-3xl font-bold text-gray-900">94%</div>
+              <div className="text-gray-600 text-sm mt-1">Placement rate</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">$128k</div>
-              <div className="text-white/60 text-sm mt-1">Average salary</div>
+              <div className="text-3xl font-bold text-gray-900">$128k</div>
+              <div className="text-gray-600 text-sm mt-1">Average salary</div>
             </div>
           </div>
         </div>
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white rounded-full mt-2"></div>
+          <div className="w-6 h-10 border-2 border-gray-900 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-gray-900 rounded-full mt-2"></div>
           </div>
         </div>
       </section>
