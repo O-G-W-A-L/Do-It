@@ -63,7 +63,18 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
         ).first()
 
         if existing_progress:
-            raise serializers.ValidationError("Progress already exists for this lesson")
+            # Allow updating to 'completed' status for existing progress
+            if self.request.data.get('status') == 'completed':
+                existing_progress.status = 'completed'
+                existing_progress.completed_at = timezone.now()
+                existing_progress.last_accessed = timezone.now()
+                existing_progress.save()
+
+                # Update student analytics
+                self._update_student_analytics(self.request.user, lesson.module.course)
+                return existing_progress
+            else:
+                raise serializers.ValidationError("Progress already exists for this lesson")
 
         # Create progress record
         progress = serializer.save(
