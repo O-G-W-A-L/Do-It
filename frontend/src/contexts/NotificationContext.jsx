@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNotifications } from '../hooks/useNotifications.js';
+import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
+  const { user } = useAuth();
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     push: true,
@@ -16,27 +18,29 @@ export function NotificationProvider({ children }) {
   // Use the notifications hook
   const notificationsHook = useNotifications();
 
-  // Initialize notifications and settings on mount
+  // Initialize notifications and settings only for authenticated users
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Load notifications and settings in parallel
-        await Promise.all([
-          notificationsHook.getNotifications({ limit: 20 }),
-          loadNotificationSettings()
-        ]);
+    if (user?.id) {
+      const loadInitialData = async () => {
+        try {
+          // Load notifications and settings in parallel
+          await Promise.all([
+            notificationsHook.getNotifications({ limit: 20 }),
+            loadNotificationSettings()
+          ]);
 
-        // Note: Real-time notifications disabled - backend doesn't have stream endpoint
-        // TODO: Implement WebSocket or polling-based real-time notifications
-      } catch (error) {
-        console.error('Failed to load notification data:', error);
-      }
-    };
+          // Note: Real-time notifications disabled - backend doesn't have stream endpoint
+          // TODO: Implement WebSocket or polling-based real-time notifications
+        } catch (error) {
+          console.error('Failed to load notification data:', error);
+        }
+      };
 
-    loadInitialData();
+      loadInitialData();
+    }
 
     // No cleanup needed for now
-  }, []);
+  }, [user?.id]);
 
   // Load notification settings
   const loadNotificationSettings = useCallback(async () => {
