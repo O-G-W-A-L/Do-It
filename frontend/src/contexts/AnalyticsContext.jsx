@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics.js';
+import { useAuth } from './AuthContext';
 
 const AnalyticsContext = createContext();
 
 export function AnalyticsProvider({ children }) {
+  const { user } = useAuth();
   const [realTimeConnection, setRealTimeConnection] = useState(null);
   const [analyticsFilters, setAnalyticsFilters] = useState({
     dateRange: '30d',
@@ -14,22 +16,24 @@ export function AnalyticsProvider({ children }) {
   // Use the analytics hook
   const analyticsHook = useAnalytics();
 
-  // Initialize analytics data on mount
+  // Initialize analytics data only for authenticated users
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Load dashboard stats and reports
-        await Promise.all([
-          analyticsHook.getDashboardStats(),
-          analyticsHook.getReports()
-        ]);
-      } catch (error) {
-        console.error('Failed to load analytics data:', error);
-      }
-    };
+    if (user?.id) {
+      const loadInitialData = async () => {
+        try {
+          // Load dashboard stats and reports
+          await Promise.all([
+            analyticsHook.getDashboardStats(),
+            analyticsHook.getReports()
+          ]);
+        } catch (error) {
+          console.error('Failed to load analytics data:', error);
+        }
+      };
 
-    loadInitialData();
-  }, []);
+      loadInitialData();
+    }
+  }, [user?.id]);
 
   // Enhanced analytics operations
   const getDashboardStats = useCallback(async () => {
