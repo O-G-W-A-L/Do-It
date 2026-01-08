@@ -87,10 +87,42 @@ class Course(models.Model):
         return (completed / total_enrollments) * 100
 
 
+class Unit(models.Model):
+    """
+    Course units (sections/topics) containing modules.
+    """
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='units')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=1)
+
+    # Content
+    duration_weeks = models.DecimalField(max_digits=4, decimal_places=1, default=1)
+    total_modules = models.PositiveIntegerField(default=0)  # Auto-calculated
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ['course', 'order']
+        indexes = [
+            models.Index(fields=['course', 'order']),
+        ]
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+    def clean(self):
+        if Unit.objects.filter(course=self.course, order=self.order).exclude(pk=self.pk).exists():
+            raise ValidationError(f"Order {self.order} already exists for this course.")
+
+
 class Module(models.Model):
     """
     Course modules (weeks/topics) containing lessons.
     """
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='modules', null=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
