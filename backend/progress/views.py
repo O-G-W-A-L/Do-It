@@ -18,6 +18,7 @@ from .serializers import (
     AssignmentRequirementSerializer, ProgressSummarySerializer,
     InstructorAnalyticsSerializer, GradingSerializer
 )
+from .services import ProgressAnalyticsService
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -48,50 +49,55 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
             # Students can only see their own progress
             return LessonProgress.objects.filter(student=user)
 
-    def perform_create(self, serializer):
-        """Ensure progress belongs to authenticated user"""
-        lesson_id = self.request.data.get('lesson')
+    def create(self, request, *args, **kwargs):
+        """Create or update progress for lesson completion"""
+        lesson_id = request.data.get('lesson')
         lesson = get_object_or_404(Lesson, id=lesson_id)
 
         # Check if user can access this lesson
-        if not self._can_access_lesson(self.request.user, lesson):
-            raise serializers.ValidationError("Cannot access this lesson")
+        if not self._can_access_lesson(request.user, lesson):
+            return Response({'detail': 'Cannot access this lesson'}, status=status.HTTP_403_FORBIDDEN)
 
         # Check if progress already exists
         existing_progress = LessonProgress.objects.filter(
-            student=self.request.user, lesson=lesson
+            student=request.user, lesson=lesson
         ).first()
 
         if existing_progress:
-            # Allow updating to 'completed' status for existing progress
-            if self.request.data.get('status') == 'completed':
-                existing_progress.status = 'completed'
-                existing_progress.completed_at = timezone.now()
-                existing_progress.last_accessed = timezone.now()
-                existing_progress.save()
+            # Update existing progress to completed
+            existing_progress.status = 'completed'
+            existing_progress.completed_at = timezone.now()
+            existing_progress.last_accessed = timezone.now()
+            existing_progress.save()
 
-                # Update student analytics
-                self._update_student_analytics(self.request.user, lesson.module.course)
-                return existing_progress
-            else:
-                raise serializers.ValidationError("Progress already exists for this lesson")
+            # Update student analytics
+            self._update_student_analytics(request.user, lesson.module.course)
 
-        # Create progress record
+            serializer = self.get_serializer(existing_progress)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Create new progress if none exists
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         progress = serializer.save(
-            student=self.request.user,
+            student=request.user,
             lesson=lesson,
             first_accessed=timezone.now(),
             last_accessed=timezone.now()
         )
 
         # Handle completion if status is 'completed'
-        if self.request.data.get('status') == 'completed':
+        if request.data.get('status') == 'completed':
             progress.status = 'completed'
             progress.completed_at = timezone.now()
             progress.save()
 
             # Update student analytics
-            self._update_student_analytics(self.request.user, lesson.module.course)
+            self._update_student_analytics(request.user, lesson.module.course)
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['post'])
     def update_progress(self, request, pk=None):
@@ -378,70 +384,7 @@ def student_progress_dashboard(request):
         return Response({'detail': 'Only students can access this dashboard'},
                       status=status.HTTP_403_FORBIDDEN)
 
-    # Get all enrollments
-    enrollments = Enrollment.objects.filter(
-        student=user, status__in=['active', 'completed']
-    ).select_related('course')
-
-    progress_data = []
-
-    for enrollment in enrollments:
-        course = enrollment.course
-
-        # Calculate progress metrics
-        total_lessons = course.total_lessons
-        completed_lessons = LessonProgress.objects.filter(
-            student=user, lesson__module__course=course, status='completed'
-        ).count()
-
-        # Get current position
-        current_progress = LessonProgress.objects.filter(
-            student=user, lesson__module__course=course
-        ).order_by('-last_accessed').first()
-
-        current_module = current_progress.lesson.module.title if current_progress else None
-        current_lesson = current_progress.lesson.title if current_progress else None
-
-        # Calculate average score
-        avg_score = LessonProgress.objects.filter(
-            student=user, lesson__module__course=course
-        ).exclude(score__isnull=True).aggregate(avg=Avg('score'))['avg']
-
-        # Calculate time spent
-        time_spent = LessonProgress.objects.filter(
-            student=user, lesson__module__course=course
-        ).aggregate(total=Sum('time_spent_seconds'))['total'] or 0
-        time_spent_hours = time_spent / 3600
-
-        # Next milestone
-        completion_pct = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
-        if completion_pct < 25:
-            next_milestone = "25% Complete"
-        elif completion_pct < 50:
-            next_milestone = "50% Complete"
-        elif completion_pct < 75:
-            next_milestone = "75% Complete"
-        elif completion_pct < 100:
-            next_milestone = "Course Complete"
-        else:
-            next_milestone = None
-
-        progress_summary = {
-            'course_id': course.id,
-            'course_title': course.title,
-            'enrollment_date': enrollment.enrolled_at,
-            'completion_percentage': round(completion_pct, 2),
-            'lessons_completed': completed_lessons,
-            'total_lessons': total_lessons,
-            'current_module': current_module,
-            'current_lesson': current_lesson,
-            'average_score': round(avg_score, 2) if avg_score else None,
-            'time_spent_hours': round(time_spent_hours, 1),
-            'next_milestone': next_milestone
-        }
-
-        progress_data.append(progress_summary)
-
+    progress_data = ProgressAnalyticsService.get_student_progress_data(user)
     serializer = ProgressSummarySerializer(progress_data, many=True)
     return Response({'courses': serializer.data})
 
@@ -456,79 +399,7 @@ def instructor_analytics_dashboard(request):
         return Response({'detail': 'Only instructors can access this dashboard'},
                       status=status.HTTP_403_FORBIDDEN)
 
-    courses = Course.objects.filter(instructor=user) if not user.profile.is_admin else Course.objects.all()
-    analytics_data = []
-
-    for course in courses:
-        # Basic enrollment stats
-        enrollments = Enrollment.objects.filter(course=course)
-        total_enrollments = enrollments.count()
-        active_students = enrollments.filter(status='active').count()
-        completed_students = enrollments.filter(status='completed').count()
-
-        completion_rate = (completed_students / total_enrollments * 100) if total_enrollments > 0 else 0
-
-        # Average scores
-        avg_score = LessonProgress.objects.filter(
-            lesson__module__course=course
-        ).exclude(score__isnull=True).aggregate(avg=Avg('score'))['avg'] or 0
-
-        # Quiz completion rate
-        total_quizzes = Lesson.objects.filter(module__course=course, content_type='quiz').count()
-        completed_quizzes = QuizSubmission.objects.filter(
-            lesson__module__course=course, passed=True
-        ).values('student').distinct().count()
-
-        quiz_completion_rate = (completed_quizzes / total_enrollments * 100) if total_enrollments > 0 else 0
-
-        # Assignment submission rate
-        total_assignments = Lesson.objects.filter(module__course=course, content_type='assignment').count()
-        submitted_assignments = AssignmentSubmission.objects.filter(
-            lesson__module__course=course
-        ).values('student').distinct().count()
-
-        assignment_submission_rate = (submitted_assignments / total_enrollments * 100) if total_enrollments > 0 else 0
-
-        # Drop-off analysis (simplified)
-        drop_off_points = {
-            'module_1_completion': 85,  # Mock data
-            'module_2_completion': 65,
-            'module_3_completion': 45
-        }
-
-        # Top performing lessons
-        top_lessons = LessonProgress.objects.filter(
-            lesson__module__course=course, status='completed'
-        ).values('lesson__title').annotate(
-            completion_count=Count('id')
-        ).order_by('-completion_count')[:5]
-
-        top_performing_lessons = [
-            {'lesson': item['lesson__title'], 'completions': item['completion_count']}
-            for item in top_lessons
-        ]
-
-        # Struggling students (low completion rates)
-        struggling_students = enrollments.filter(
-            progress_percentage__lt=30
-        ).count()
-
-        analytics_summary = {
-            'course_id': course.id,
-            'course_title': course.title,
-            'total_enrollments': total_enrollments,
-            'active_students': active_students,
-            'completion_rate': round(completion_rate, 2),
-            'average_score': round(avg_score, 2),
-            'quiz_completion_rate': round(quiz_completion_rate, 2),
-            'assignment_submission_rate': round(assignment_submission_rate, 2),
-            'drop_off_points': drop_off_points,
-            'top_performing_lessons': top_performing_lessons,
-            'struggling_students_count': struggling_students
-        }
-
-        analytics_data.append(analytics_summary)
-
+    analytics_data = ProgressAnalyticsService.get_instructor_analytics_data(user)
     serializer = InstructorAnalyticsSerializer(analytics_data, many=True)
     return Response({'courses': serializer.data})
 
