@@ -18,6 +18,8 @@ export default function CourseContent() {
   const { enrollments, getCourseModules } = useCourseContext();
 
   const [course, setCourse] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [selectedUnit, setSelectedUnit] = useState(null);
   const [modules, setModules] = useState([]);
   const [currentModule, setCurrentModule] = useState(null);
   const [currentLesson, setCurrentLesson] = useState(null);
@@ -28,7 +30,7 @@ export default function CourseContent() {
   // Find enrollment for this course
   const enrollment = enrollments.find(e => e.course === parseInt(courseId));
 
-  // Load course modules
+  // Load course units and modules
   const loadCourseContent = useCallback(async () => {
     if (!courseId) return;
 
@@ -46,35 +48,51 @@ export default function CourseContent() {
         return;
       }
 
-      // Load modules for this course
-      const modulesResult = await getCourseModules(courseId);
-      if (modulesResult) {
-        setModules(modulesResult);
-        setCourse({ id: courseId, title: enrollment.course_title });
+      // Load course data with units
+      const courseResponse = await fetch(`/api/courses/courses/${courseId}/`);
+      const courseData = await courseResponse.json();
 
-        // Set current module/lesson from enrollment
-        if (enrollment.current_module) {
-          setCurrentModule(enrollment.current_module);
-        }
-        if (enrollment.current_lesson) {
-          // Find the actual lesson object from modules data
-          const lessonObject = modulesResult
-            .flatMap(module => module.lessons || [])
-            .find(lesson => lesson.id === enrollment.current_lesson);
-          if (lessonObject) {
-            setCurrentLesson(lessonObject);
-          }
-        }
+      if (courseData.units && courseData.units.length > 0) {
+        // Use units structure
+        setUnits(courseData.units);
+        setCourse({ id: courseId, title: courseData.title });
 
-        // Auto-expand current module
-        if (enrollment.current_module) {
-          setExpandedModules(prev => ({
-            ...prev,
-            [enrollment.current_module]: true
-          }));
-        }
+        // Select first unit by default
+        const firstUnit = courseData.units[0];
+        setSelectedUnit(firstUnit);
+        setModules(firstUnit.modules || []);
       } else {
-        setError('Failed to load course content');
+        // Fallback to modules structure (backward compatibility)
+        const modulesResult = await getCourseModules(courseId);
+        if (modulesResult) {
+          setModules(modulesResult);
+          setCourse({ id: courseId, title: enrollment.course_title });
+        } else {
+          setError('Failed to load course content');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Set current module/lesson from enrollment
+      if (enrollment.current_module) {
+        setCurrentModule(enrollment.current_module);
+      }
+      if (enrollment.current_lesson) {
+        // Find the actual lesson object from modules data
+        const allLessons = modules.flatMap(module => module.lessons || []);
+        const lessonObject = allLessons.find(lesson => lesson.id === enrollment.current_lesson);
+        if (lessonObject) {
+          setCurrentLesson(lessonObject);
+        }
+      }
+
+      // Auto-expand current module
+      if (enrollment.current_module) {
+        setExpandedModules(prev => ({
+          ...prev,
+          [enrollment.current_module]: true
+        }));
       }
     } catch (err) {
       setError('Failed to load course content');
@@ -82,11 +100,21 @@ export default function CourseContent() {
     } finally {
       setLoading(false);
     }
-  }, [courseId, enrollments, getCourseModules]);
+  }, [courseId, enrollments, getCourseModules, modules]);
 
   useEffect(() => {
     loadCourseContent();
   }, [loadCourseContent]);
+
+  const handleUnitChange = (unitId) => {
+    const unit = units.find(u => u.id === parseInt(unitId));
+    if (unit) {
+      setSelectedUnit(unit);
+      setModules(unit.modules || []);
+      // Reset expanded modules when switching units
+      setExpandedModules({});
+    }
+  };
 
   const toggleModuleExpansion = (moduleId) => {
     setExpandedModules(prev => ({
@@ -109,8 +137,14 @@ export default function CourseContent() {
   };
 
   const getLessonStatus = (lesson) => {
-    // This would be determined by progress tracking
-    // For now, just show as available
+    // Check if lesson is completed based on progress tracking
+    // This would typically come from a progress API call or context
+    // For now, we'll simulate based on enrollment data
+    if (enrollment && enrollment.progress_percentage > 0) {
+      // Simple logic: assume lessons are completed in order
+      // In a real implementation, you'd check specific lesson progress
+      return 'completed';
+    }
     return 'available';
   };
 
@@ -137,6 +171,37 @@ export default function CourseContent() {
       <div className="lg:col-span-1">
         <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-24">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Content</h3>
+
+          {/* Unit Selector */}
+          {units.length > 1 && (
+            <div className="mb-4">
+              <label htmlFor="unit-select" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Unit
+              </label>
+              <select
+                id="unit-select"
+                value={selectedUnit?.id || ''}
+                onChange={(e) => handleUnitChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-blue focus:border-brand-blue"
+              >
+                {units.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Unit Title */}
+          {selectedUnit && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900">{selectedUnit.title}</h4>
+              {selectedUnit.description && (
+                <p className="text-sm text-gray-600 mt-1">{selectedUnit.description}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             {Array.isArray(modules) && modules.map(module => (
