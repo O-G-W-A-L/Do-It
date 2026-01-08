@@ -10,10 +10,10 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
 
-from .models import Course, Module, Lesson, Enrollment, CourseReview
+from .models import Course, Unit, Module, Lesson, Enrollment, CourseReview
 from .serializers import (
     CourseSerializer, CourseListSerializer, CourseCreateSerializer,
-    ModuleSerializer, LessonSerializer, EnrollmentSerializer, CourseReviewSerializer
+    UnitSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, CourseReviewSerializer
 )
 
 
@@ -228,6 +228,58 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(course)
         return Response(serializer.data)
+
+
+class UnitViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for unit management within courses
+    """
+    queryset = Unit.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = UnitSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        course_id = self.request.query_params.get('course')
+
+        if course_id:
+            course = get_object_or_404(Course, id=course_id)
+            # Check permissions
+            if not self._can_access_course(user, course):
+                return Unit.objects.none()
+            return course.units.all()
+
+        # Return units for courses user can access
+        if user.profile.is_instructor and not user.profile.is_admin:
+            return Unit.objects.filter(course__instructor=user)
+        elif user.profile.is_admin:
+            return Unit.objects.all()
+        else:
+            # Students can see units from enrolled courses
+            enrolled_course_ids = Enrollment.objects.filter(
+                student=user, status__in=['active', 'completed']
+            ).values_list('course_id', flat=True)
+            return Unit.objects.filter(course_id__in=enrolled_course_ids)
+
+    def perform_create(self, serializer):
+        """Ensure unit belongs to user's course"""
+        course_id = self.request.data.get('course')
+        course = get_object_or_404(Course, id=course_id)
+
+        if not self._can_manage_course(self.request.user, course):
+            raise serializers.ValidationError("Cannot add units to this course")
+
+        serializer.save(course=course)
+
+    def _can_access_course(self, user, course):
+        """Check if user can access course content"""
+        if course.status != 'published' and not self._can_manage_course(user, course):
+            return False
+        return True
+
+    def _can_manage_course(self, user, course):
+        """Check if user can manage course"""
+        return (user.profile.is_instructor and course.instructor == user) or user.profile.is_admin
 
 
 class ModuleViewSet(viewsets.ModelViewSet):
