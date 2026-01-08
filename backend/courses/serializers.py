@@ -1,6 +1,30 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Course, Module, Lesson, Enrollment, CourseReview
+from .models import Course, Unit, Module, Lesson, Enrollment, CourseReview
+
+
+class UnitSerializer(serializers.ModelSerializer):
+    """Serializer for course units with nested modules"""
+    modules = serializers.SerializerMethodField()
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    modules_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Unit
+        fields = [
+            'id', 'title', 'description', 'order', 'duration_weeks',
+            'total_modules', 'course_title', 'modules_count', 'modules',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_modules']
+
+    def get_modules(self, obj):
+        """Get modules for this unit, ordered by order field"""
+        modules = obj.modules.all().order_by('order')
+        return ModuleSerializer(modules, many=True, context=self.context).data
+
+    def get_modules_count(self, obj):
+        return obj.modules.count()
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -88,7 +112,8 @@ class CourseSerializer(serializers.ModelSerializer):
     """Comprehensive serializer for courses with nested data"""
     instructor_name = serializers.CharField(source='instructor.get_full_name', read_only=True)
     instructor_username = serializers.CharField(source='instructor.username', read_only=True)
-    modules = ModuleSerializer(many=True, read_only=True)
+    units = UnitSerializer(many=True, read_only=True)
+    modules = ModuleSerializer(many=True, read_only=True)  # Keep for backward compatibility
     reviews = CourseReviewSerializer(many=True, read_only=True)
     enrollment_count = serializers.ReadOnlyField()
     completion_rate = serializers.ReadOnlyField()
@@ -102,7 +127,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'thumbnail', 'status', 'level', 'is_free', 'price',
             'max_students', 'duration_weeks', 'total_lessons',
             'enrollment_count', 'completion_rate', 'average_rating',
-            'published_at', 'modules', 'reviews',
+            'published_at', 'units', 'modules', 'reviews',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
