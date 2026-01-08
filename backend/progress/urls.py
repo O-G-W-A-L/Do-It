@@ -8,7 +8,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'progress', LessonProgressViewSet)
+router.register(r'', LessonProgressViewSet, basename='progress')
 router.register(r'quiz-submissions', QuizSubmissionViewSet)
 router.register(r'assignment-submissions', AssignmentSubmissionViewSet)
 router.register(r'quiz-questions', QuizQuestionViewSet)
