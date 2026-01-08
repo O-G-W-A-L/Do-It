@@ -55,7 +55,7 @@ class LessonProgressSerializer(serializers.ModelSerializer):
             'completed_at', 'score', 'max_score', 'attempts_count'
         ]
         read_only_fields = [
-            'id', 'student', 'lesson', 'first_accessed', 'updated_at'
+            'id', 'student', 'first_accessed', 'updated_at'
         ]
 
     def update(self, instance, validated_data):
