@@ -10,7 +10,7 @@ class QuizAnswerSerializer(serializers.ModelSerializer):
     """Serializer for quiz answers"""
     class Meta:
         model = QuizAnswer
-        fields = ['id', 'question', 'answer_text', 'is_correct', 'order']
+        fields = ['id', 'answer_text', 'is_correct', 'order']
         read_only_fields = ['id']
 
 
