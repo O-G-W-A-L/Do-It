@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CourseViewSet, UnitViewSet, ModuleViewSet, LessonViewSet, EnrollmentViewSet,
-    student_dashboard, instructor_dashboard
+    student_dashboard, instructor_dashboard, course_outline
 )
 
 router = DefaultRouter()
@@ -20,4 +20,7 @@ urlpatterns = [
     # Dashboard endpoints
     path('dashboard/student/', student_dashboard, name='student-dashboard'),
     path('dashboard/instructor/', instructor_dashboard, name='instructor-dashboard'),
+    
+    # Course outline endpoint
+    path('courses/<int:course_id>/outline/', course_outline, name='course-outline'),
 ]
