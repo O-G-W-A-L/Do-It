@@ -8,10 +8,11 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'', LessonProgressViewSet, basename='progress')
+# IMPORTANT: Register specific routes BEFORE empty string
 router.register(r'quiz-submissions', QuizSubmissionViewSet)
 router.register(r'assignment-submissions', AssignmentSubmissionViewSet)
 router.register(r'quiz-questions', QuizQuestionViewSet)
+router.register(r'', LessonProgressViewSet, basename='progress')
 
 urlpatterns = [
     # ViewSet endpoints
