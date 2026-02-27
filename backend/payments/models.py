@@ -1,4 +1,5 @@
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F
 from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal
@@ -41,7 +42,7 @@ class PaymentTransaction(models.Model):
     # Transaction details
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
     gateway = models.CharField(max_length=20, choices=GATEWAY_CHOICES, default='stripe')
-    gateway_transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    gateway_transaction_id = models.CharField(max_length=255, blank=True, null=True, unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
     # Related objects (JSON for flexibility)
@@ -75,38 +76,19 @@ class PaymentTransaction(models.Model):
         return f"{self.user.username} - {self.payment_type} - {self.amount} {self.currency}"
 
     def mark_completed(self, gateway_transaction_id=None):
-        """Mark transaction as completed"""
-        self.status = 'completed'
-        self.processed_at = timezone.now()
-        if gateway_transaction_id:
-            self.gateway_transaction_id = gateway_transaction_id
-        self.save()
+        """Delegate to PaymentService for business logic."""
+        from payments.services import PaymentService
+        PaymentService.mark_completed(self, gateway_transaction_id)
 
     def mark_failed(self, reason=None):
-        """Mark transaction as failed"""
-        self.status = 'failed'
-        self.failure_reason = reason or 'Payment failed'
-        self.save()
+        """Delegate to PaymentService for business logic."""
+        from payments.services import PaymentService
+        PaymentService.mark_failed(self, reason)
 
     def process_refund(self, refund_amount=None, reason=None):
-        """Process a refund for this transaction"""
-        if refund_amount is None:
-            refund_amount = self.amount
-
-        refund = Refund.objects.create(
-            original_transaction=self,
-            amount=refund_amount,
-            reason=reason,
-            processed_by=self.user
-        )
-
-        if refund_amount == self.amount:
-            self.status = 'refunded'
-        else:
-            self.status = 'partially_refunded'
-
-        self.save()
-        return refund
+        """Delegate to PaymentService for business logic."""
+        from payments.services import PaymentService
+        return PaymentService.process_refund(self, refund_amount, reason)
 
 
 class SubscriptionPlan(models.Model):
@@ -259,8 +241,31 @@ class Coupon(models.Model):
         """Get total usage count"""
         return CouponUsage.objects.filter(coupon=self).count()
 
+    @transaction.atomic
+    def use(self, user, transaction_obj):
+        """Atomically check and use coupon - prevents race conditions."""
+        # Lock the coupon row
+        coupon = Coupon.objects.select_for_update().get(pk=self.pk)
+        
+        # Check validity
+        if not coupon.is_valid():
+            raise ValueError("Coupon is not valid")
+        
+        # Check usage count
+        user_uses = CouponUsage.objects.filter(coupon=coupon, user=user).count()
+        if user_uses >= coupon.max_uses_per_user:
+            raise ValueError(f"Coupon can only be used {coupon.max_uses_per_user} time(s)")
+        
+        # Create usage record
+        return CouponUsage.objects.create(
+            coupon=coupon,
+            user=user,
+            transaction=transaction_obj,
+            discount_amount=self.calculate_discount(transaction_obj.amount)
+        )
+
     def can_be_used_by(self, user):
-        """Check if user can use this coupon"""
+        """Check if user can use this coupon (non-atomic, for display only)"""
         if not self.is_valid():
             return False, "Coupon is not valid"
 

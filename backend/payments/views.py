@@ -503,23 +503,30 @@ def stripe_webhook(request):
         import json
         event = json.loads(payload)
 
-        # Create webhook record
-        webhook = PaymentWebhook.objects.create(
-            gateway='stripe',
-            event_type=event.get('type'),
+        # Create webhook record - idempotent using get_or_create
+        # If already exists, skip processing (prevents duplicate handling)
+        webhook, created = PaymentWebhook.objects.get_or_create(
             event_id=event.get('id'),
-            payload=event
+            defaults={
+                'gateway': 'stripe',
+                'event_type': event.get('type'),
+                'payload': event
+            }
         )
+        
+        # If webhook already existed, it's a duplicate - return early
+        if not created:
+            return Response({'status': 'already_processed'})
 
         # Process the event
         if event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']
-            # Find and update transaction
+            # Find and update transaction - only if not already completed
             transaction = PaymentTransaction.objects.filter(
                 gateway_transaction_id=payment_intent['id']
             ).first()
 
-            if transaction:
+            if transaction and transaction.status != 'completed':
                 transaction.mark_completed(payment_intent['id'])
 
         elif event['type'] == 'invoice.payment_succeeded':
