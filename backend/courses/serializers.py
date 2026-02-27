@@ -142,7 +142,12 @@ class CourseSerializer(serializers.ModelSerializer):
         return round(sum(review.rating for review in reviews) / len(reviews), 1)
 
     def validate(self, attrs):
-        """Validate course data"""
+        """Validate course data - skip validation for updates"""
+        # Skip all validation for updates (PATCH requests)
+        if self.instance is not None:
+            return attrs
+        
+        # Only validate for create operations
         if attrs.get('status') == 'published' and not attrs.get('description'):
             raise serializers.ValidationError("Published courses must have a description")
 
