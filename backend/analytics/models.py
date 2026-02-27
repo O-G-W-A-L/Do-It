@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.files.base import ContentFile
@@ -305,8 +306,11 @@ class AnalyticsReport(models.Model):
         self.file_path = default_storage.save(file_path, file_obj)
         self.file_size = len(content)
         self.last_generated = timezone.now()
-        self.generation_count += 1
-        self.save()
+        # Use F() for atomic counter update - prevents race conditions
+        AnalyticsReport.objects.filter(pk=self.pk).update(
+            generation_count=F('generation_count') + 1
+        )
+        self.refresh_from_db()
 
         return self.file_path
 
@@ -439,8 +443,11 @@ class AnalyticsDashboard(models.Model):
     def record_view(self):
         """Record dashboard view"""
         self.last_viewed = timezone.now()
-        self.view_count += 1
-        self.save()
+        # Use F() for atomic counter update - prevents race conditions
+        AnalyticsDashboard.objects.filter(pk=self.pk).update(
+            view_count=F('view_count') + 1
+        )
+        self.refresh_from_db()
 
 
 class LearningRecommendation(models.Model):

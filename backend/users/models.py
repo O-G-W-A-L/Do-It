@@ -141,25 +141,20 @@ class Profile(models.Model):
         return False
 
     def increment_failed_login(self):
-        """Increment failed login attempts and lock account if threshold reached."""
-        self.failed_login_attempts += 1
-        if self.failed_login_attempts >= 5:  # Lock after 5 failed attempts
-            self.account_locked_until = timezone.now() + timedelta(minutes=30)
-        self.save(update_fields=['failed_login_attempts', 'account_locked_until'])
+        """Delegate to ProfileService for business logic."""
+        from users.services import ProfileService
+        return ProfileService.increment_failed_login(self)
 
     def reset_failed_login(self):
-        """Reset failed login attempts on successful login."""
-        self.failed_login_attempts = 0
-        self.account_locked_until = None
-        self.save(update_fields=['failed_login_attempts', 'account_locked_until'])
+        """Delegate to ProfileService for business logic."""
+        from users.services import ProfileService
+        return ProfileService.reset_failed_login(self)
 
     def check_profile_completion(self):
-        """Check if profile is complete based on role requirements."""
-        required_fields = ['bio', 'location', 'phone_number']
-        if self.role == 'instructor':
-            required_fields.append('profile_image')
-
-        self.is_profile_complete = all(getattr(self, field) for field in required_fields)
+        """Delegate to ProfileService for business logic."""
+        from users.services import ProfileService
+        is_complete, _ = ProfileService.check_profile_completion(self)
+        self.is_profile_complete = is_complete
         self.save(update_fields=['is_profile_complete'])
         return self.is_profile_complete
 

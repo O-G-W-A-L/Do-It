@@ -29,44 +29,31 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username  = validated_data['username'],
-            email     = validated_data['email'],
-            password  = validated_data['password1'],
-            is_active = True  # For testing - enable immediately
+        # Delegate to service - keeps serializer clean
+        from users.services import UserRegistrationService
+        user, error = UserRegistrationService.register_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password1']
         )
-        # Email verification enabled for proper user onboarding
-        ev = EmailVerification.objects.create(user=user)
-        # verify_url = f"{settings.FRONTEND_URL}/verify-email/{ev.token}/"
-        # send_mail(
-        #     subject        = 'Verify your email',
-        #     message        = f'Click here to verify your account: {verify_url}',
-        #     from_email     = settings.DEFAULT_FROM_EMAIL,
-        #     recipient_list = [user.email],
-        #     fail_silently  = False,
-        # )
+        if error:
+            raise serializers.ValidationError({'error': error})
         return user
 
 class VerifyEmailSerializer(serializers.Serializer):
     token = serializers.UUIDField()
 
     def validate_token(self, value):
-        try:
-            ev = EmailVerification.objects.get(token=value)
-        except EmailVerification.DoesNotExist:
-            raise serializers.ValidationError("Invalid token.")
-        if not ev.is_valid():
-            raise serializers.ValidationError("Token expired or already used.")
-        return ev
+        # Delegate validation to service
+        from users.services import UserRegistrationService
+        user, error = UserRegistrationService.verify_email(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
 
     def save(self):
-        ev = self.validated_data['token']
-        ev.used = True
-        ev.save(update_fields=['used'])
-        user = ev.user
-        user.is_active = True
-        user.save(update_fields=['is_active'])
-        return user
+        # Already validated - just return success
+        return True
 
 class ResendVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -290,6 +277,54 @@ class UserBanSerializer(serializers.ModelSerializer):
 
     def get_user_full_name(self, obj):
         return obj.user.get_full_name() or obj.user.username
+
+# ONE-TIME SETUP WIZARD SERIALIZERS
+class InitialAdminSetupSerializer(serializers.Serializer):
+    """Serializer for initial admin setup (one-time)"""
+    username = serializers.CharField(min_length=3, max_length=150)
+    email = serializers.EmailField()
+    password1 = serializers.CharField(write_only=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if attrs['password1'] != attrs['password2']:
+            raise serializers.ValidationError({'password2': "Passwords must match."})
+        
+        if User.objects.filter(username=attrs['username']).exists():
+            raise serializers.ValidationError({'username': "Username already exists."})
+        
+        if User.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({'email': "Email already exists."})
+        
+        return attrs
+
+    def create(self, validated_data):
+        from users.services import UserRegistrationService
+        
+        # Create superuser
+        user = User.objects.create_superuser(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password1'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
+        )
+        
+        # Set profile role to admin
+        user.profile.role = 'admin'
+        user.profile.save()
+        
+        return user
+
+
+class SetupStatusSerializer(serializers.Serializer):
+    """Serializer for setup status"""
+    setup_required = serializers.BooleanField()
+    existing_admin_count = serializers.IntegerField()
+    message = serializers.CharField()
+
 
 class UserStatusSerializer(serializers.ModelSerializer):
     set_by_name = serializers.SerializerMethodField()

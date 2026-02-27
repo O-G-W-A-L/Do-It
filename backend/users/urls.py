@@ -12,6 +12,11 @@ from .views import (
     get_user_preferences, update_user_preferences,
     get_user_security_dashboard, logout_session, logout_all_sessions,
     get_user_learning_data,
+    # Setup wizard
+    setup_status, setup_initialize,
+    # Admin actions
+    admin_dashboard,
+    admin_stats,
 )
 
 router = DefaultRouter()
@@ -48,8 +53,18 @@ urlpatterns = [
 
     # Admin management (router URLs)
     path('management/', include(router.urls)),
+    
+    # Admin dashboard
+    path('dashboard/admin/', admin_dashboard, name='admin-dashboard'),
+    
+    # Additional admin actions (explicit routing)
+    path('management/stats/', admin_stats, name='admin-stats'),
 
     # Admin invitation system
     path('admin/send-invitation/', send_admin_invitation),
     path('admin/accept-invitation/<uuid:token>/', accept_admin_invitation),
+
+    # One-time setup wizard (initial admin creation)
+    path('setup/status/', setup_status, name='setup-status'),
+    path('setup/initialize/', setup_initialize, name='setup-initialize'),
 ]

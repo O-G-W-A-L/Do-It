@@ -28,6 +28,7 @@ from .serializers import (
     RegisterSerializer, VerifyEmailSerializer, ResendVerificationSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     CustomTokenObtainPairSerializer,
+    InitialAdminSetupSerializer, SetupStatusSerializer,
 )
 
 # Custom Views & ViewSets
@@ -179,6 +180,67 @@ class UserMeView(APIView):
             return Response(UserSerializer(request.user).data)
         except Exception:
             return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+## ONE-TIME SETUP WIZARD - Initial Admin Creation
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def setup_status(request):
+    """
+    Check if initial setup is required.
+    Returns whether admin setup is needed based on existing admin count.
+    """
+    User = get_user_model()
+    admin_count = Profile.objects.filter(role='admin').count()
+    
+    setup_required = admin_count == 0
+    
+    if setup_required:
+        message = "Initial setup required. No admin accounts exist."
+    else:
+        message = f"System already has {admin_count} admin(s). Setup not required."
+    
+    return Response({
+        'setup_required': setup_required,
+        'existing_admin_count': admin_count,
+        'message': message
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def setup_initialize(request):
+    """
+    Initialize the system with the first admin account.
+    Only works when NO admin exists in the system.
+    """
+    User = get_user_model()
+    
+    # Check if any admin already exists
+    admin_count = Profile.objects.filter(role='admin').count()
+    if admin_count > 0:
+        return Response({
+            'detail': 'System is already set up. Admin accounts already exist.'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Validate input
+    serializer = InitialAdminSetupSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create admin user
+    user = serializer.save()
+    
+    # Generate JWT tokens
+    refresh = RefreshToken.for_user(user)
+    
+    return Response({
+        'detail': 'Admin account created successfully!',
+        'user': UserSerializer(user).data,
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+        'message': 'Welcome! You are now the system administrator.'
+    }, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
         try:
@@ -1108,3 +1170,92 @@ class UserManagementViewSet(ModelViewSet):
 
         except Exception:
             return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Admin Dashboard View
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_dashboard(request):
+    """Admin dashboard with overview statistics"""
+    try:
+        if not request.user.profile.is_admin:
+            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    except AttributeError:
+        return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from django.db.models import Count, Sum, Avg
+    from courses.models import Course, Enrollment
+    from progress.models import Progress
+    from payments.models import Transaction
+    from notifications.models import Notification
+    
+    # Get counts
+    total_users = User.objects.count()
+    total_courses = Course.objects.count()
+    total_enrollments = Enrollment.objects.count()
+    active_enrollments = Enrollment.objects.filter(status='active').count()
+    
+    # Revenue
+    total_revenue = Transaction.objects.filter(status='completed').aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # Recent activity
+    recent_enrollments = Enrollment.objects.order_by('-enrolled_at')[:5]
+    recent_users = User.objects.order_by('-date_joined')[:5]
+    
+    # Completion rate
+    completed_enrollments = Enrollment.objects.filter(status='completed').count()
+    completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+    
+    return Response({
+        'total_users': total_users,
+        'total_courses': total_courses,
+        'total_enrollments': total_enrollments,
+        'active_enrollments': active_enrollments,
+        'completed_enrollments': completed_enrollments,
+        'completion_rate': round(completion_rate, 2),
+        'total_revenue': float(total_revenue),
+        'recent_enrollments': EnrollmentSerializer(recent_enrollments, many=True).data,
+        'recent_users': UserSerializer(recent_users, many=True).data,
+    })
+
+
+# Admin Stats View
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_stats(request):
+    """Detailed admin statistics"""
+    try:
+        if not request.user.profile.is_admin:
+            return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    except AttributeError:
+        return Response({'detail': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from django.db.models import Count
+    from courses.models import Course, Enrollment
+    from payments.models import Transaction
+    
+    # Users by role
+    users_by_role = User.objects.annotate(role_count=Count('profile__role')).values('profile__role').annotate(count=Count('id'))
+    
+    # Courses by status
+    courses_by_status = Course.objects.values('status').annotate(count=Count('id'))
+    
+    # Enrollments by status
+    enrollments_by_status = Enrollment.objects.values('status').annotate(count=Count('id'))
+    
+    # Monthly enrollments (last 6 months)
+    from django.utils import timezone
+    from datetime import timedelta
+    six_months_ago = timezone.now() - timedelta(days=180)
+    monthly_enrollments = Enrollment.objects.filter(
+        enrolled_at__gte=six_months_ago
+    ).extra(
+        select={'month': "TO_CHAR(enrolled_at, 'YYYY-MM')"}
+    ).values('month').annotate(count=Count('id'))
+    
+    return Response({
+        'users_by_role': list(users_by_role),
+        'courses_by_status': list(courses_by_status),
+        'enrollments_by_status': list(enrollments_by_status),
+        'monthly_enrollments': list(monthly_enrollments),
+    })
