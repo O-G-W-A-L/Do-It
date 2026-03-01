@@ -36,11 +36,41 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
         else:
             return base_queryset.filter(student=user)
 
+    def _get_next_lesson(self, current_lesson):
+        """Get the next lesson in sequence"""
+        current_module = current_lesson.module
+        current_order = current_lesson.order
+        
+        # Try next lesson in same module
+        next_lesson = Lesson.objects.filter(
+            module=current_module,
+            order__gt=current_order
+        ).order_by('order').first()
+        
+        if next_lesson:
+            return next_lesson
+        
+        # Try first lesson in next module
+        next_module = Module.objects.filter(
+            course=current_module.course,
+            order__gt=current_module.order
+        ).order_by('order').first()
+        
+        if next_module:
+            return next_module.lessons.order_by('order').first()
+        
+        return None
+
     def create(self, request, *args, **kwargs):
         lesson_id = request.data.get('lesson')
         lesson = get_object_or_404(Lesson, id=lesson_id)
         if not self._can_access_lesson(request.user, lesson):
             return Response({'detail': 'Cannot access this lesson'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Calculate next lesson BEFORE saving
+        next_lesson = self._get_next_lesson(lesson)
+        is_last_lesson = next_lesson is None
+        
         existing_progress = LessonProgress.objects.filter(student=request.user, lesson=lesson).first()
         if existing_progress:
             existing_progress.status = 'completed'
@@ -49,7 +79,12 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
             existing_progress.save()
             self._update_student_analytics(request.user, lesson.module.course)
             serializer = self.get_serializer(existing_progress)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            response_data = serializer.data
+            response_data['next_lesson_id'] = next_lesson.id if next_lesson else None
+            response_data['next_module_id'] = next_lesson.module.id if next_lesson and next_lesson.module.id != lesson.module.id else None
+            response_data['is_last_lesson'] = is_last_lesson
+            return Response(response_data, status=status.HTTP_200_OK)
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         progress = serializer.save(student=request.user, lesson=lesson, first_accessed=timezone.now(), last_accessed=timezone.now())
@@ -59,7 +94,11 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
             progress.save()
             self._update_student_analytics(request.user, lesson.module.course)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        response_data = serializer.data
+        response_data['next_lesson_id'] = next_lesson.id if next_lesson else None
+        response_data['next_module_id'] = next_lesson.module.id if next_lesson and next_lesson.module.id != lesson.module.id else None
+        response_data['is_last_lesson'] = is_last_lesson
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['post'])
     def update_progress(self, request, pk=None):
@@ -107,6 +146,17 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
             analytics.average_score = scored_progress.aggregate(avg=Avg('score'))['avg']
         analytics.last_activity = timezone.now()
         analytics.save()
+
+    @action(detail=False, methods=['get'], url_path='courses/(?P<course_id>[^/.]+)/progress')
+    def course_progress(self, request, course_id=None):
+        """Get all progress records for a specific course"""
+        course = get_object_or_404(Course, id=course_id)
+        progress_records = self.get_queryset().filter(
+            lesson__module__course=course,
+            student=request.user
+        )
+        serializer = self.get_serializer(progress_records, many=True)
+        return Response(serializer.data)
 
 
 class QuizSubmissionViewSet(viewsets.ModelViewSet):
