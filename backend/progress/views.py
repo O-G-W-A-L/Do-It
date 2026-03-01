@@ -10,7 +10,8 @@ from core.pagination import StandardResultsSetPagination
 
 from .models import (
     LessonProgress, QuizSubmission, AssignmentSubmission,
-    StudentAnalytics, QuizQuestion, QuizAnswer, AssignmentRequirement
+    StudentAnalytics, QuizQuestion, QuizAnswer, AssignmentRequirement,
+    Cohort, CohortMember, PeerReviewAssignment, PeerReviewRubric
 )
 from courses.models import Course, Module, Lesson, Enrollment
 from .serializers import (
@@ -337,3 +338,292 @@ def unlock_content(request):
                 unlock_reason = f"Complete all lessons in {prev_module.title} first"
                 break
     return Response({'can_access': can_access, 'unlock_reason': unlock_reason, 'lesson_id': lesson_id})
+
+
+# ALX-style Mentor Dashboard Views
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mentor_dashboard(request):
+    """
+    Mentor dashboard - shows assigned cohorts and their progress
+    """
+    user = request.user
+    
+    # Only mentors and admins can access
+    if not user.profile.is_mentor and not user.profile.is_admin:
+        return Response({'detail': 'Only mentors can access this dashboard'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get assigned cohorts (admin sees all)
+    if user.profile.is_admin:
+        cohorts = Cohort.objects.all().select_related('course')
+    else:
+        cohorts = user.profile.assigned_cohorts.all().select_related('course')
+    
+    cohorts_data = []
+    for cohort in cohorts:
+        # Get members (students in this cohort)
+        members = cohort.members.all().select_related('student')
+        
+        # Calculate cohort stats
+        total_students = members.count()
+        enrolled_students = Enrollment.objects.filter(
+            course=cohort.course,
+            status__in=['active', 'completed']
+        ).count()
+        
+        # Get pending submissions from cohort members
+        from courses.models import Enrollment
+        member_user_ids = [m.student.id for m in members]
+        pending_submissions = AssignmentSubmission.objects.filter(
+            student_id__in=member_user_ids,
+            lesson__module__course=cohort.course,
+            status='pending'
+        ).count()
+        
+        cohorts_data.append({
+            'id': cohort.id,
+            'name': cohort.name,
+            'course': {
+                'id': cohort.course.id,
+                'title': cohort.course.title
+            },
+            'start_date': cohort.start_date,
+            'end_date': cohort.end_date,
+            'is_active': cohort.is_active,
+            'total_students': total_students,
+            'enrolled_students': enrolled_students,
+            'pending_submissions': pending_submissions,
+            'reviewers_per_submission': cohort.reviewers_per_submission
+        })
+    
+    return Response({
+        'cohorts': cohorts_data,
+        'role': user.profile.role,
+        'is_mentor': user.profile.is_mentor,
+        'is_admin': user.profile.is_admin
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cohort_detail(request, cohort_id):
+    """
+    Get detailed info about a specific cohort
+    """
+    user = request.user
+    
+    if not user.profile.is_mentor and not user.profile.is_admin:
+        return Response({'detail': 'Only mentors can access this view'}, status=status.HTTP_403_FORBIDDEN)
+    
+    cohort = get_object_or_404(Cohort, id=cohort_id)
+    
+    # Check access (admin or assigned mentor)
+    if not user.profile.is_admin:
+        if not user.profile.assigned_cohorts.filter(id=cohort_id).exists():
+            return Response({'detail': 'You are not assigned to this cohort'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get cohort members with their progress
+    members = cohort.members.all().select_related('student')
+    member_data = []
+    
+    for member in members:
+        # Get enrollment
+        enrollment = Enrollment.objects.filter(
+            student=member.student,
+            course=cohort.course,
+            status__in=['active', 'completed']
+        ).first()
+        
+        # Get progress stats
+        progress = LessonProgress.objects.filter(
+            student=member.student,
+            lesson__module__course=cohort.course
+        )
+        
+        completed_lessons = progress.filter(status='completed').count()
+        total_lessons = cohort.course.total_lessons
+        
+        # Get submissions
+        submissions = AssignmentSubmission.objects.filter(
+            student=member.student,
+            lesson__module__course=cohort.course
+        )
+        
+        member_data.append({
+            'id': member.id,
+            'student': {
+                'id': member.student.id,
+                'username': member.student.username,
+                'full_name': member.student.get_full_name(),
+                'email': member.student.email
+            },
+            'enrolled': enrollment is not None,
+            'enrollment_status': enrollment.status if enrollment else None,
+            'progress': {
+                'lessons_completed': completed_lessons,
+                'total_lessons': total_lessons,
+                'percentage': round((completed_lessons / total_lessons * 100) if total_lessons > 0 else 0, 1)
+            },
+            'submissions': {
+                'total': submissions.count(),
+                'pending': submissions.filter(status='pending').count(),
+                'graded': submissions.exclude(graded_at__isnull=True).count()
+            },
+            'joined_at': member.joined_at
+        })
+    
+    return Response({
+        'cohort': {
+            'id': cohort.id,
+            'name': cohort.name,
+            'course': {
+                'id': cohort.course.id,
+                'title': cohort.course.title
+            },
+            'start_date': cohort.start_date,
+            'end_date': cohort.end_date,
+            'is_active': cohort.is_active,
+            'reviewers_per_submission': cohort.reviewers_per_submission
+        },
+        'members': member_data
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cohort_submissions(request, cohort_id):
+    """
+    Get all pending submissions from cohort members for grading
+    """
+    user = request.user
+    
+    if not user.profile.is_mentor and not user.profile.is_admin:
+        return Response({'detail': 'Only mentors can access this view'}, status=status.HTTP_403_FORBIDDEN)
+    
+    cohort = get_object_or_404(Cohort, id=cohort_id)
+    
+    # Check access
+    if not user.profile.is_admin:
+        if not user.profile.assigned_cohorts.filter(id=cohort_id).exists():
+            return Response({'detail': 'You are not assigned to this cohort'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get member IDs
+    member_ids = [m.student.id for m in cohort.members.all()]
+    
+    # Get all submissions from cohort
+    submissions = AssignmentSubmission.objects.filter(
+        student_id__in=member_ids,
+        lesson__module__course=cohort.course
+    ).select_related('student', 'lesson').order_by('-submitted_at')
+    
+    submissions_data = []
+    for sub in submissions:
+        # Get peer reviews
+        peer_reviews = sub.peer_reviews.all().select_related('reviewer')
+        peer_review_data = []
+        for pr in peer_reviews:
+            peer_review_data.append({
+                'id': pr.id,
+                'reviewer': {
+                    'id': pr.reviewer.id,
+                    'full_name': pr.reviewer.get_full_name()
+                },
+                'status': pr.status,
+                'total_score': float(pr.total_score) if pr.total_score else None,
+                'feedback': pr.feedback,
+                'completed_at': pr.completed_at
+            })
+        
+        # Calculate peer grade average
+        completed_reviews = [pr for pr in peer_review_data if pr['status'] == 'completed']
+        if completed_reviews:
+            avg_peer_grade = sum([pr['total_score'] for pr in completed_reviews if pr['total_score']]) / len(completed_reviews)
+        else:
+            avg_peer_grade = None
+        
+        submissions_data.append({
+            'id': sub.id,
+            'student': {
+                'id': sub.student.id,
+                'username': sub.student.username,
+                'full_name': sub.student.get_full_name()
+            },
+            'lesson': {
+                'id': sub.lesson.id,
+                'title': sub.lesson.title
+            },
+            'submission_text': sub.submission_text,
+            'submitted_at': sub.submitted_at,
+            'status': sub.status,
+            'score': float(sub.score) if sub.score else None,
+            'max_score': float(sub.max_score) if sub.max_score else None,
+            'percentage': float(sub.percentage) if sub.percentage else None,
+            'grade': sub.grade,
+            'instructor_feedback': sub.instructor_feedback,
+            'graded_at': sub.graded_at,
+            'peer_reviews': peer_review_data,
+            'average_peer_grade': round(avg_peer_grade, 2) if avg_peer_grade else None
+        })
+    
+    return Response({'submissions': submissions_data})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def override_grade(request, submission_id):
+    """
+    Override a submission grade (mentor/admin only)
+    """
+    user = request.user
+    
+    if not user.profile.is_mentor and not user.profile.is_admin:
+        return Response({'detail': 'Only mentors can override grades'}, status=status.HTTP_403_FORBIDDEN)
+    
+    submission = get_object_or_404(AssignmentSubmission, id=submission_id)
+    
+    # Check cohort access
+    cohort = Cohort.objects.filter(
+        course=submission.lesson.module.course,
+        assigned_mentors__user=user
+    ).first()
+    
+    if not user.profile.is_admin and not cohort:
+        return Response({'detail': 'You are not assigned to this cohort'}, status=status.HTTP_403_FORBIDDEN)
+    
+    score = request.data.get('score')
+    feedback = request.data.get('feedback', '')
+    
+    if score is None:
+        return Response({'detail': 'score is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    submission.score = score
+    submission.instructor_feedback = feedback
+    submission.graded_at = timezone.now()
+    
+    # Calculate percentage and grade
+    if submission.max_score:
+        submission.percentage = (submission.score / submission.max_score * 100)
+        submission.passed = submission.percentage >= 70
+        if submission.percentage >= 90:
+            submission.grade = 'A'
+        elif submission.percentage >= 80:
+            submission.grade = 'B'
+        elif submission.percentage >= 70:
+            submission.grade = 'C'
+        elif submission.percentage >= 60:
+            submission.grade = 'D'
+        else:
+            submission.grade = 'F'
+    
+    submission.save()
+    
+    return Response({
+        'detail': 'Grade overridden successfully',
+        'submission': {
+            'id': submission.id,
+            'score': float(submission.score),
+            'percentage': float(submission.percentage),
+            'grade': submission.grade,
+            'instructor_feedback': submission.instructor_feedback
+        }
+    })

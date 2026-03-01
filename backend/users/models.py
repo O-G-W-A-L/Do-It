@@ -31,13 +31,13 @@ class EmailVerification(models.Model):
 
 class AdminInvitation(models.Model):
     """
-    Magic link invitations for admin/instructor accounts
+    Magic link invitations for admin/mentor accounts - ALX style
     """
     email = models.EmailField(unique=True)
     role = models.CharField(
         max_length=20,
-        choices=[('instructor', 'Instructor'), ('admin', 'Admin')],
-        default='instructor'
+        choices=[('mentor', 'Mentor'), ('admin', 'Admin')],
+        default='mentor'
     )
     invited_by = models.ForeignKey(
         User,
@@ -70,14 +70,23 @@ class AdminInvitation(models.Model):
 
 
 class Profile(models.Model):
+    # ALX-style roles: student, mentor (facilitator), admin/curriculum_team
     USER_ROLES = [
-        ('student', 'Student'),
-        ('instructor', 'Instructor'),
-        ('admin', 'Admin'),
+        ('student', 'Student'),      # Enrolls, learns, submits projects, does peer reviews
+        ('mentor', 'Mentor'),       # Facilitates cohort - no content creation
+        ('admin', 'Admin'),         # Full system control + curriculum building
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=USER_ROLES, default='student')
+
+    # ALX-style: mentor can be scoped to specific cohorts
+    assigned_cohorts = models.ManyToManyField(
+        'progress.Cohort', 
+        blank=True, 
+        related_name='assigned_mentors',
+        help_text="Mentors are scoped to these cohorts (admins see all)"
+    )
 
     # Basic profile information
     bio = models.TextField(blank=True)
@@ -127,11 +136,22 @@ class Profile(models.Model):
         return self.role == 'student'
 
     @property
+    def is_mentor(self):
+        """ALX-style: mentor facilitates cohorts but doesn't create content"""
+        return self.role == 'mentor'
+
+    @property
     def is_instructor(self):
-        return self.role == 'instructor'
+        """Legacy alias for backward compatibility"""
+        return self.role == 'mentor'
 
     @property
     def is_admin(self):
+        return self.role == 'admin'
+
+    @property
+    def is_curriculum_team(self):
+        """Same as admin - can build curriculum"""
         return self.role == 'admin'
 
     @property
