@@ -325,7 +325,7 @@ export default function ModuleContent() {
           </div>
         </div>
 
-        {/* ALX-style checklist progress - no percentage bar */}
+        {/* Doit checklist progress - no percentage bar */}
         <div className="flex items-center gap-2 text-sm">
           <CheckCircle className="w-4 h-4 text-green-500" />
           <span className="text-gray-600">{completedCount} of {totalLessons} lessons completed</span>

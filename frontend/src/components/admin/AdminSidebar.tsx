@@ -9,24 +9,38 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Video
+  Video,
+  GraduationCap,
+  ClipboardList,
+  UsersRound
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AdminSidebar = ({ activeSection, onSectionChange, onLogout }) => {
   const { user } = useAuth();
+  const userRole = user?.profile?.role;
+  const isMentor = userRole === 'mentor';
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'grade', label: 'Grade', icon: FileText },
-    { id: 'payments', label: 'Payments', icon: CreditCard },
-    { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'test-video', label: 'Test Video', icon: Video },
-  ];
+  // Different menu items based on role
+  const menuItems = isMentor 
+    ? [
+        // Mentor menu
+        { id: 'mentor-dashboard', label: 'My Dashboard', icon: GraduationCap },
+        { id: 'grading-queue', label: 'Grading Queue', icon: ClipboardList },
+        { id: 'mentor-cohort', label: 'My Cohorts', icon: UsersRound },
+      ]
+    : [
+        // Admin/Instructor menu
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'courses', label: 'Courses', icon: BookOpen },
+        { id: 'users', label: 'Users', icon: Users },
+        { id: 'grade', label: 'Grade', icon: FileText },
+        { id: 'payments', label: 'Payments', icon: CreditCard },
+        { id: 'messages', label: 'Messages', icon: MessageSquare },
+        { id: 'reports', label: 'Reports', icon: BarChart3 },
+        { id: 'settings', label: 'Settings', icon: Settings },
+        { id: 'test-video', label: 'Test Video', icon: Video },
+      ];
 
   return (
     <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">

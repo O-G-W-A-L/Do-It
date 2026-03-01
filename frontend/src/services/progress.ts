@@ -10,7 +10,12 @@ import type {
   ProgressUpdateRequest,
   QuizSubmissionRequest,
   AssignmentSubmissionRequest,
-  GradingRequest
+  GradingRequest,
+  MentorDashboardResponse,
+  CohortDetail,
+  CohortSubmission,
+  GradeOverrideRequest,
+  GradeOverrideResponse
 } from '../types/api/progress';
 
 /**
@@ -135,6 +140,48 @@ export const progressService = {
   async getStudentAnalytics(courseId: number): Promise<ServiceResponse<StudentAnalytics>> {
     try {
       const response = await api.get<StudentAnalytics>(`/api/progress/courses/${courseId}/analytics/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: apiUtils.handleError(error) };
+    }
+  },
+
+  // ========== MENTOR DASHBOARD APIs ==========
+
+  // Get mentor dashboard data (assigned cohorts)
+  async getMentorDashboard(): Promise<ServiceResponse<MentorDashboardResponse>> {
+    try {
+      const response = await api.get<MentorDashboardResponse>('/api/progress/dashboard/mentor/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: apiUtils.handleError(error) };
+    }
+  },
+
+  // Get cohort details with learner progress
+  async getCohortDetails(cohortId: number): Promise<ServiceResponse<CohortDetail>> {
+    try {
+      const response = await api.get<CohortDetail>(`/api/progress/mentor/cohorts/${cohortId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: apiUtils.handleError(error) };
+    }
+  },
+
+  // Get submissions from cohort members for grading
+  async getCohortSubmissions(cohortId: number): Promise<ServiceResponse<{ submissions: CohortSubmission[] }>> {
+    try {
+      const response = await api.get<{ submissions: CohortSubmission[] }>(`/api/progress/mentor/cohorts/${cohortId}/submissions/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: apiUtils.handleError(error) };
+    }
+  },
+
+  // Override a submission grade
+  async overrideGrade(submissionId: number, request: GradeOverrideRequest): Promise<ServiceResponse<GradeOverrideResponse>> {
+    try {
+      const response = await api.post<GradeOverrideResponse>(`/api/progress/mentor/submissions/${submissionId}/override/`, request);
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: apiUtils.handleError(error) };
