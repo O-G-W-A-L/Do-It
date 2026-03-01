@@ -1,18 +1,37 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/auth.js';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { authService } from '../services/auth';
 import { useNavigate } from 'react-router-dom';
+import type { User } from '../types/api/user';
 
-export const AuthContext = createContext();
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  infoMessage: string | null;
+  login: (username: string, password: string) => Promise<void>;
+  signup: (username: string, email: string, password1: string, password2: string) => Promise<void>;
+  loginWithGoogle: (token: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  confirmPasswordReset: (token: string, newPassword: string) => Promise<void>;
+  logout: () => void;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser]           = useState(null);
-  const [error, setError]         = useState(null);
-  const [loading, setLoading]     = useState(true);
-  const [infoMessage, setInfoMessage] = useState(null);
-  const navigate                  = useNavigate();
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Generate unique tab ID for session isolation
-  const tabId = React.useMemo(() => {
+  const tabId = useMemo(() => {
     let id = sessionStorage.getItem('tabId');
     if (!id) {
       id = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -22,11 +41,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Tab-specific localStorage helpers
-  const getTabStorage = (key) => localStorage.getItem(`${key}_${tabId}`);
-  const setTabStorage = (key, value) => localStorage.setItem(`${key}_${tabId}`, value);
-  const removeTabStorage = (key) => localStorage.removeItem(`${key}_${tabId}`);
+  const getTabStorage = (key: string): string | null => localStorage.getItem(`${key}_${tabId}`);
+  const setTabStorage = (key: string, value: string): void => localStorage.setItem(`${key}_${tabId}`, value);
+  const removeTabStorage = (key: string): void => localStorage.removeItem(`${key}_${tabId}`);
 
-  const fetchUser = async () => {
+  const fetchUser = async (): Promise<void> => {
     const token = getTabStorage('access_token');
     if (!token) {
       setLoading(false);
@@ -34,7 +53,7 @@ export function AuthProvider({ children }) {
     }
     try {
       const result = await authService.getCurrentUser();
-      if (result.success) {
+      if (result.success && result.data) {
         setUser(result.data);
       } else {
         setUser(null);
@@ -63,7 +82,8 @@ export function AuthProvider({ children }) {
       );
 
       if (shouldRedirect) {
-        const redirectPath = (userRole === 'admin' || userRole === 'instructor')
+        // ALX-style: admin and mentor go to /admin, students go to /dashboard
+      const redirectPath = (userRole === 'admin' || userRole === 'mentor')
           ? '/admin'
           : '/dashboard';
         navigate(redirectPath, { replace: true });
@@ -71,25 +91,23 @@ export function AuthProvider({ children }) {
     }
   }, [user, loading, navigate]);
 
-  const login = async (username, password) => {
+  const login = async (username: string, password: string): Promise<void> => {
     setError(null);
     try {
       const result = await authService.login({ username, password });
-      if (result.success) {
+      if (result.success && result.data) {
         setTabStorage('access_token', result.data.access);
         setTabStorage('refresh_token', result.data.refresh);
-        await fetchUser(); // This will update the user state
-
-        // Note: Role-based redirect will happen in useEffect below
+        await fetchUser();
       } else {
         setError(result.error || 'Login failed');
       }
-    } catch (err) {
+    } catch {
       setError('Login failed. Please try again.');
     }
   };
 
-  const signup = async (username, email, password1, password2) => {
+  const signup = async (username: string, email: string, password1: string, password2: string): Promise<void> => {
     setError(null);
     setInfoMessage(null);
     try {
@@ -105,12 +123,12 @@ export function AuthProvider({ children }) {
       } else {
         setError(result.error || 'Registration failed');
       }
-    } catch (err) {
+    } catch {
       setError('Registration failed. Please try again.');
     }
   };
 
-  const resendVerification = async (email) => {
+  const resendVerification = async (email: string): Promise<void> => {
     setError(null);
     setInfoMessage(null);
     try {
@@ -120,12 +138,12 @@ export function AuthProvider({ children }) {
       } else {
         setError(result.error || 'Could not resend verification');
       }
-    } catch (err) {
+    } catch {
       setError('Could not resend verification. Please try again.');
     }
   };
 
-  const requestPasswordReset = async (email) => {
+  const requestPasswordReset = async (email: string): Promise<void> => {
     setError(null);
     setInfoMessage(null);
     try {
@@ -135,12 +153,12 @@ export function AuthProvider({ children }) {
       } else {
         setError(result.error || 'Could not send reset link');
       }
-    } catch (err) {
+    } catch {
       setError('Could not send reset link. Please try again.');
     }
   };
 
-  const confirmPasswordReset = async (token, newPassword) => {
+  const confirmPasswordReset = async (token: string, newPassword: string): Promise<void> => {
     setError(null);
     setInfoMessage(null);
     try {
@@ -151,30 +169,28 @@ export function AuthProvider({ children }) {
       } else {
         setError(result.error || 'Reset failed');
       }
-    } catch (err) {
+    } catch {
       setError('Reset failed. Please try again.');
     }
   };
 
-  const loginWithGoogle = async (token) => {
+  const loginWithGoogle = async (token: string): Promise<void> => {
     setError(null);
     try {
       const result = await authService.googleLogin(token);
-      if (result.success) {
+      if (result.success && result.data) {
         setTabStorage('access_token', result.data.access);
         setTabStorage('refresh_token', result.data.refresh);
-        await fetchUser(); // This will update the user state
-
-        // Note: Role-based redirect will happen in useEffect above
+        await fetchUser();
       } else {
         setError(result.error || 'Google login failed');
       }
-    } catch (err) {
+    } catch {
       setError('Google login failed. Please try again.');
     }
   };
 
-  const logout = () => {
+  const logout = (): void => {
     removeTabStorage('access_token');
     removeTabStorage('refresh_token');
     setUser(null);
@@ -185,23 +201,31 @@ export function AuthProvider({ children }) {
     navigate('/');
   };
 
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    loading,
+    error,
+    infoMessage,
+    login,
+    signup,
+    loginWithGoogle,
+    resendVerification,
+    requestPasswordReset,
+    confirmPasswordReset,
+    logout
+  }), [user, loading, error, infoMessage, navigate]);
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      error,
-      infoMessage,
-      login,
-      signup,
-      loginWithGoogle,
-      resendVerification,
-      requestPasswordReset,
-      confirmPasswordReset,
-      logout
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
