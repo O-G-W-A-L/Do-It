@@ -1,17 +1,21 @@
-import api, { apiUtils } from './api.js';
+import api, { apiUtils } from './api';
+import type { 
+  User, 
+  LoginResponse, 
+  ServiceResponse 
+} from '../types/api/user';
 
 /**
  * Authentication service for user management
  */
 export const authService = {
   // User authentication
-  async login(credentials) {
+  async login(credentials: { username: string; password: string }): Promise<ServiceResponse<LoginResponse>> {
     try {
-      const response = await api.post('/api/auth/login/', credentials);
+      const response = await api.post<LoginResponse>('/api/auth/login/', credentials);
       return {
         success: true,
         data: response.data,
-        user: response.data.user
       };
     } catch (error) {
       return {
@@ -21,7 +25,12 @@ export const authService = {
     }
   },
 
-  async register(userData) {
+  async register(userData: { 
+    username: string; 
+    email: string; 
+    password1: string; 
+    password2: string 
+  }): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/registration/', userData);
       return {
@@ -36,7 +45,7 @@ export const authService = {
     }
   },
 
-  async logout() {
+  async logout(): Promise<ServiceResponse<null>> {
     try {
       await api.post('/api/auth/logout/');
       return { success: true };
@@ -47,14 +56,14 @@ export const authService = {
   },
 
   // Token management
-  async refreshToken() {
+  async refreshToken(): Promise<ServiceResponse<{ access: string; refresh: string }>> {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
 
-      const response = await api.post('/api/auth/refresh/', {
+      const response = await api.post<{ access: string; refresh: string }>('/api/auth/refresh/', {
         refresh: refreshToken
       });
 
@@ -71,9 +80,9 @@ export const authService = {
   },
 
   // User profile
-  async getCurrentUser() {
+  async getCurrentUser(): Promise<ServiceResponse<User>> {
     try {
-      const response = await api.get('/api/auth/user/');
+      const response = await api.get<User>('/api/auth/user/');
       return {
         success: true,
         data: response.data
@@ -86,9 +95,9 @@ export const authService = {
     }
   },
 
-  async updateProfile(userData) {
+  async updateProfile(userData: Partial<User>): Promise<ServiceResponse<User>> {
     try {
-      const response = await api.patch('/api/auth/user/', userData);
+      const response = await api.patch<User>('/api/auth/user/', userData);
       return {
         success: true,
         data: response.data
@@ -102,7 +111,11 @@ export const authService = {
   },
 
   // Password management
-  async changePassword(passwordData) {
+  async changePassword(passwordData: { 
+    old_password: string; 
+    new_password: string; 
+    new_password2: string 
+  }): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/password/change/', passwordData);
       return {
@@ -117,7 +130,7 @@ export const authService = {
     }
   },
 
-  async resetPassword(email) {
+  async resetPassword(email: string): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/password/reset/', { email });
       return {
@@ -132,7 +145,10 @@ export const authService = {
     }
   },
 
-  async confirmPasswordReset(tokenData) {
+  async confirmPasswordReset(tokenData: { 
+    token: string; 
+    new_password: string 
+  }): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/password/reset/confirm/', tokenData);
       return {
@@ -148,7 +164,7 @@ export const authService = {
   },
 
   // Email verification
-  async resendVerification(email) {
+  async resendVerification(email: string): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/resend-verification/', { email });
       return {
@@ -163,7 +179,7 @@ export const authService = {
     }
   },
 
-  async verifyEmail(key) {
+  async verifyEmail(key: string): Promise<ServiceResponse<unknown>> {
     try {
       const response = await api.post('/api/auth/verify-email/', { key });
       return {
@@ -179,9 +195,9 @@ export const authService = {
   },
 
   // Social authentication
-  async googleLogin(token) {
+  async googleLogin(token: string): Promise<ServiceResponse<LoginResponse>> {
     try {
-      const response = await api.post('/api/auth/google/', { access_token: token });
+      const response = await api.post<LoginResponse>('/api/auth/google/', { access_token: token });
       return {
         success: true,
         data: response.data
