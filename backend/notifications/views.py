@@ -214,7 +214,10 @@ class NotificationAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 def _get_recipient_address(user, channel):
-    """Helper function to get recipient address for channel"""
+    """
+    Helper function to get recipient address for channel.
+    Consolidated to avoid duplication.
+    """
     if channel == 'email':
         return user.email
     elif channel == 'sms':
@@ -543,21 +546,6 @@ def trigger_payment_notification(request):
         })
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-def _get_recipient_address(user, channel):
-    """Helper function to get recipient address for channel"""
-    if channel == 'email':
-        return user.email
-    elif channel == 'sms':
-        preferences = user.notification_preferences
-        return preferences.phone_number or ''
-    elif channel == 'push':
-        # This would be device token in production
-        return f"device_token_{user.id}"
-    elif channel == 'in_app':
-        return f"user_{user.id}"
-    return ''
 
 
 @api_view(['POST'])

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -320,10 +321,15 @@ class NotificationDelivery(models.Model):
 
     def mark_failed(self, error_message=None, error_code=None):
         """Mark delivery as failed"""
+        # Use F() for atomic counter update - prevents race conditions
+        NotificationDelivery.objects.filter(pk=self.pk).update(
+            retry_count=F('retry_count') + 1
+        )
+        self.refresh_from_db()
+        
         self.status = 'failed'
         self.error_message = error_message or ''
         self.error_code = error_code or ''
-        self.retry_count += 1
 
         if self.retry_count < self.max_retries:
             # Schedule retry (exponential backoff)
