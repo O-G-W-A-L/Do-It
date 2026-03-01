@@ -35,8 +35,9 @@ class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = [
-            'id', 'title', 'description', 'order', 'content_type', 'content',
-            'video_url', 'video_duration', 'attachments', 'is_required',
+            'id', 'title', 'description', 'order', 'content_type', 
+            'lesson_type', 'weight',  # Doit lesson classification
+            'content', 'video_url', 'video_duration', 'attachments', 'is_required',
             'estimated_duration', 'tags', 'difficulty', 'course_title',
             'module_title', 'created_at', 'updated_at'
         ]

@@ -70,7 +70,7 @@ class AdminInvitation(models.Model):
 
 
 class Profile(models.Model):
-    # ALX-style roles: student, mentor (facilitator), admin/curriculum_team
+    # Doit roles: student, mentor (facilitator), admin/curriculum_team
     USER_ROLES = [
         ('student', 'Student'),      # Enrolls, learns, submits projects, does peer reviews
         ('mentor', 'Mentor'),       # Facilitates cohort - no content creation
@@ -80,7 +80,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=USER_ROLES, default='student')
 
-    # ALX-style: mentor can be scoped to specific cohorts
+    # Doit: mentor can be scoped to specific cohorts
     assigned_cohorts = models.ManyToManyField(
         'progress.Cohort', 
         blank=True, 
@@ -137,7 +137,7 @@ class Profile(models.Model):
 
     @property
     def is_mentor(self):
-        """ALX-style: mentor facilitates cohorts but doesn't create content"""
+        """Doit: mentor facilitates cohorts but doesn't create content"""
         return self.role == 'mentor'
 
     @property

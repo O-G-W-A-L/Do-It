@@ -174,6 +174,15 @@ class Lesson(models.Model):
 
     # Content
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES, default='text')
+    
+    # Doit lesson classification
+    LESSON_TYPES = [
+        ('simple', 'Simple Content'),  # readings, videos - just "Mark Complete"
+        ('project', 'Project/Milestone'),  # requires submission + peer review
+    ]
+    lesson_type = models.CharField(max_length=20, choices=LESSON_TYPES, default='simple')
+    weight = models.DecimalField(max_digits=5, decimal_places=2, default=30.00, help_text="Weight in course grade (e.g., 30 for 30%)")
+    
     content = models.JSONField(blank=True, null=True)  # Flexible content storage
 
     # Media

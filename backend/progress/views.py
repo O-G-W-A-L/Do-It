@@ -340,7 +340,7 @@ def unlock_content(request):
     return Response({'can_access': can_access, 'unlock_reason': unlock_reason, 'lesson_id': lesson_id})
 
 
-# ALX-style Mentor Dashboard Views
+# Doit Mentor Dashboard Views
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mentor_dashboard(request):

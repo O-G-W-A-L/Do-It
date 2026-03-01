@@ -22,7 +22,7 @@ urlpatterns = [
     path('dashboard/student/', student_progress_dashboard, name='student-progress-dashboard'),
     path('dashboard/instructor/', instructor_analytics_dashboard, name='instructor-analytics-dashboard'),
     
-    # ALX-style Mentor dashboard endpoints
+    # Doit Mentor dashboard endpoints
     path('dashboard/mentor/', mentor_dashboard, name='mentor-dashboard'),
     path('mentor/cohorts/<int:cohort_id>/', cohort_detail, name='cohort-detail'),
     path('mentor/cohorts/<int:cohort_id>/submissions/', cohort_submissions, name='cohort-submissions'),
