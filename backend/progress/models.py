@@ -187,6 +187,15 @@ class AssignmentSubmission(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
 
+    # Tiered deadlines (ALX-style)
+    tier_1_deadline = models.DateTimeField(null=True, blank=True, help_text="First deadline - 100% max score")
+    tier_2_deadline = models.DateTimeField(null=True, blank=True, help_text="Second deadline - 65% max score")
+    tier_3_deadline = models.DateTimeField(null=True, blank=True, help_text="Third/late deadline - 50% max score")
+    
+    # Tier cap applied (which tier was used)
+    applied_tier = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Which tier was applied: 1, 2, or 3")
+    tier_cap_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="The capped percentage based on tier")
+
     class Meta:
         unique_together = ['student', 'lesson']
         indexes = [
@@ -197,11 +206,42 @@ class AssignmentSubmission(models.Model):
     def __str__(self):
         return f"{self.student.username} - {self.lesson.title} ({self.status})"
 
+    def calculate_tier(self):
+        """Calculate which tier deadline applies and apply cap"""
+        now = timezone.now()
+        
+        if self.tier_1_deadline and now <= self.tier_1_deadline:
+            self.applied_tier = 1
+            self.tier_cap_percentage = 100
+            return 1
+        elif self.tier_2_deadline and now <= self.tier_2_deadline:
+            self.applied_tier = 2
+            self.tier_cap_percentage = 65
+            return 2
+        elif self.tier_3_deadline and now <= self.tier_3_deadline:
+            self.applied_tier = 3
+            self.tier_cap_percentage = 50
+            return 3
+        else:
+            # Past all deadlines - still allow submission but with lowest tier
+            self.applied_tier = 3
+            self.tier_cap_percentage = 50
+            return 3
+
+    def apply_tier_cap(self, raw_percentage):
+        """Apply tier cap to the raw percentage score"""
+        tier = self.calculate_tier()
+        
+        if self.tier_cap_percentage:
+            return min(raw_percentage, float(self.tier_cap_percentage))
+        return raw_percentage
+
     def submit(self):
         """Mark assignment as submitted"""
         if self.status == 'draft':
             self.status = 'submitted'
             self.submitted_at = timezone.now()
+            self.calculate_tier()  # Calculate which tier applies
             self.save()
 
     def grade_assignment(self, score, max_score, feedback='', grade=None):

@@ -129,6 +129,9 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     assignment_title = serializers.CharField(source='lesson.title', read_only=True)
     student_name = serializers.CharField(source='student.get_full_name', read_only=True)
     attachments = serializers.JSONField(required=False)
+    
+    # Tier information (read-only for frontend display)
+    tier_info = serializers.SerializerMethodField()
 
     class Meta:
         model = AssignmentSubmission
@@ -137,18 +140,60 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             'submission_text', 'attachments', 'submitted_at',
             'graded_at', 'score', 'max_score', 'percentage', 'passed',
             'instructor_feedback', 'grade', 'status',
+            # Tiered deadline fields
+            'tier_1_deadline', 'tier_2_deadline', 'tier_3_deadline',
+            'applied_tier', 'tier_cap_percentage', 'tier_info',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'student', 'lesson', 'submitted_at', 'graded_at',
             'score', 'max_score', 'percentage', 'passed', 'grade',
+            'applied_tier', 'tier_cap_percentage', 'tier_info',
             'created_at', 'updated_at'
         ]
+
+    def get_tier_info(self, obj):
+        """Return tier information for display"""
+        if not obj.tier_1_deadline:
+            return None
+        
+        from django.utils import timezone
+        now = timezone.now()
+        
+        # Calculate current tier status
+        tier_status = {}
+        if obj.tier_1_deadline:
+            tier_status['tier_1'] = {
+                'deadline': obj.tier_1_deadline,
+                'max_percentage': 100,
+                'passed': now <= obj.tier_1_deadline,
+                'label': 'Tier 1 - Full Score'
+            }
+        if obj.tier_2_deadline:
+            tier_status['tier_2'] = {
+                'deadline': obj.tier_2_deadline,
+                'max_percentage': 65,
+                'passed': now <= obj.tier_2_deadline,
+                'label': 'Tier 2 - 65% Cap'
+            }
+        if obj.tier_3_deadline:
+            tier_status['tier_3'] = {
+                'deadline': obj.tier_3_deadline,
+                'max_percentage': 50,
+                'passed': now <= obj.tier_3_deadline,
+                'label': 'Tier 3 - 50% Cap (Late)'
+            }
+        
+        return tier_status
 
     def create(self, validated_data):
         """Create assignment submission"""
         validated_data['submitted_at'] = timezone.now()
-        return super().create(validated_data)
+        # Calculate tier on submission
+        submission = super().create(validated_data)
+        submission.calculate_tier()
+        submission.save()
+        return submission
 
 
 class StudentAnalyticsSerializer(serializers.ModelSerializer):
