@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   FiHome, FiGrid, FiAlertTriangle,
@@ -9,7 +8,14 @@ import {
   FiMessageSquare, FiServer, FiBox, FiVideo, FiUserCheck,
   FiUser
 } from 'react-icons/fi';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
+
+interface SidebarProps {
+  currentView: string;
+  onViewChange: () => void;
+  onAddTask: () => void;
+  onClose: () => void;
+}
 
 const MENU = [
   { key: 'hub',               route: '/hub',              icon: FiHome,           label: 'Home' },
@@ -27,11 +33,11 @@ const MENU = [
   { key: 'profile',           route: '/profile',          icon: FiUser,           label: 'Profile' },
 ];
 
-export default function Sidebar({ currentView, onViewChange, onAddTask, onClose }) {
+export default function Sidebar({ currentView, onViewChange, onAddTask, onClose }: SidebarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleNavigation = (route) => {
+  const handleNavigation = (route: string): void => {
     navigate(route);
     if (onClose) onClose();
   };
@@ -132,10 +138,3 @@ export default function Sidebar({ currentView, onViewChange, onAddTask, onClose 
     </aside>
   );
 }
-
-Sidebar.propTypes = {
-  currentView: PropTypes.string.isRequired,
-  onViewChange: PropTypes.func.isRequired,
-  onAddTask: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired
-};

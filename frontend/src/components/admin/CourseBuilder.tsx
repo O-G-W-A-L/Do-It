@@ -70,33 +70,44 @@ const CourseBuilder = ({ onSave, onPublish }) => {
       setLoadingCourses(true);
       setCoursesError(null);
       const result = await coursesService.getCourses();
-      if (result.success) {
-        setCourses(result.data.results || result.data);
+      if (result.success && result.data) {
+        // API now returns array directly from /api/courses/courses/
+        if (Array.isArray(result.data)) {
+          setCourses(result.data);
+        } else {
+          console.error('Unexpected courses response:', result.data);
+          setCourses([]);
+        }
       } else {
-        setCoursesError(result.error);
+        setCoursesError(result.error || 'Failed to load courses');
+        setCourses([]);
       }
     } catch (error) {
       setCoursesError('Failed to load courses');
+      setCourses([]);
     } finally {
       setLoadingCourses(false);
     }
   };
 
-  const loadModules = async (courseId) => {
+  const loadModules = async (courseId: number) => {
     try {
       setLoadingModules(true);
       setModulesError(null);
       const result = await coursesService.getCourseModules(courseId);
-      if (result.success) {
+      if (result.success && result.data) {
         // The API returns modules with lessons already included
-        const courseModules = (result.data.results || result.data)
-          .sort((a, b) => a.order - b.order);
+        const courseModules = Array.isArray(result.data) 
+          ? result.data.sort((a: any, b: any) => a.order - b.order)
+          : [];
         setModules(courseModules);
       } else {
-        setModulesError(result.error);
+        setModulesError(result.error || 'Failed to load modules');
+        setModules([]);
       }
     } catch (error) {
       setModulesError('Failed to load course modules');
+      setModules([]);
     } finally {
       setLoadingModules(false);
     }

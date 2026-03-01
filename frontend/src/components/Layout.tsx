@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import TopBar from './TopBar';
 import Sidebar from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Layout({ children, title, currentView = 'dashboard' }) {
+interface LayoutProps {
+  children: ReactNode;
+  title?: string;
+  currentView?: string;
+}
+
+export default function Layout({ children, title, currentView = 'dashboard' }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { logout } = useAuth();
 
