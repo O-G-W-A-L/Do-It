@@ -3,21 +3,25 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesService } from '../services/courses';
+import type { CourseListItem } from '../types/api/course';
 import {
   Search, Filter, BookOpen, Users, Clock, Star,
   ChevronDown, Play, CheckCircle, Lock
 } from 'lucide-react';
 
+type SortOption = 'newest' | 'oldest' | 'title' | 'popular' | 'rating';
+type LevelOption = '' | 'beginner' | 'intermediate' | 'advanced';
+
 export default function CourseDiscovery() {
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<CourseListItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedLevel, setSelectedLevel] = useState<LevelOption>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   // Load courses on mount
   useEffect(() => {

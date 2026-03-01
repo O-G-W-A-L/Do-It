@@ -4,6 +4,8 @@ import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSelectedCourseContext } from '../contexts/SelectedCourseContext';
 import { progressService } from '../services/progress';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/ui/Toast';
 import MDEditor from '@uiw/react-md-editor';
 import {
   ChevronLeft, ChevronRight, PlayCircle, CheckCircle,
@@ -23,28 +25,28 @@ export default function ModuleContent() {
   const [currentLesson, setCurrentLesson] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [lessonProgress, setLessonProgress] = useState<Record<number, boolean>>({});
+  const [completingLesson, setCompletingLesson] = useState<number | null>(null);
+  const { toasts, success, dismissToast } = useToast();
 
-  // Find enrollment for this course - handle different data structures
-  const enrollment = enrollments.find(e =>
-    e.course === parseInt(courseId) ||
-    e.course?.id === parseInt(courseId) ||
-    e.course_id === parseInt(courseId)
-  );
+  // Find enrollment for this course
+  const enrollment = enrollments.find(e => e.course === Number(courseId));
 
-  // Load module data
+  // Load module data and progress
   const loadModuleContent = useCallback(async () => {
     if (!courseId || !moduleId) return;
+
+    const courseIdNum = Number(courseId);
+    const moduleIdNum = Number(moduleId);
+    
+    if (isNaN(courseIdNum) || isNaN(moduleIdNum)) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Validate enrollment for this course - handle different data structures
-      const enrollment = enrollments.find(e =>
-        e.course === parseInt(courseId) ||
-        e.course?.id === parseInt(courseId) ||
-        e.course_id === parseInt(courseId)
-      );
+      // Validate enrollment for this course
+      const enrollment = enrollments.find(e => e.course === courseIdNum);
       if (!enrollment) {
         setError('You are not enrolled in this course');
         setLoading(false);
@@ -52,21 +54,36 @@ export default function ModuleContent() {
       }
 
       // Load all modules for this course
-      const modulesResult = await getCourseModules(courseId);
+      const modulesResult = await getCourseModules(courseIdNum);
+      
+      // Fetch progress for this course
+      const progressResult = await progressService.getCourseProgress(courseIdNum);
+      const progressMap: Record<number, boolean> = {};
+      if (progressResult.success && progressResult.data) {
+        progressResult.data.forEach((p: any) => {
+          if (p.status === 'completed') {
+            progressMap[p.lesson] = true;
+          }
+        });
+      }
+      setLessonProgress(progressMap);
+
       if (modulesResult && Array.isArray(modulesResult)) {
         setModules(modulesResult);
 
         // Find the specific module
-        const targetModule = modulesResult.find(m => m.id === parseInt(moduleId));
+        const targetModule = modulesResult.find(m => m.id === moduleIdNum);
         if (targetModule) {
           setModule(targetModule);
-          setCourse({ id: courseId, title: enrollment.course_title });
+          setCourse({ id: courseIdNum, title: enrollment.course_title });
 
-          // Set current lesson (first lesson or from progress)
+          // Set current lesson (first uncompleted or first lesson)
           if (targetModule.lessons && targetModule.lessons.length > 0) {
-            // For now, just set the first lesson
-            // In a real implementation, this would check progress
-            setCurrentLesson(targetModule.lessons[0]);
+            // Find first uncompleted lesson or use first
+            const firstUncompleted = targetModule.lessons.find(
+              (l: any) => !progressMap[l.id]
+            );
+            setCurrentLesson(firstUncompleted || targetModule.lessons[0]);
           }
         } else {
           setError('Module not found');
@@ -99,11 +116,15 @@ export default function ModuleContent() {
     }
   };
 
-  const getLessonStatus = (lesson) => {
-    // This would be determined by progress tracking
-    // For now, just show as available
-    return 'available';
+  const isLessonCompleted = (lessonId: number) => {
+    return lessonProgress[lessonId] === true;
   };
+
+  // Calculate completed lessons count
+  const completedCount = module?.lessons 
+    ? module.lessons.filter((l: any) => isLessonCompleted(l.id)).length 
+    : 0;
+  const totalLessons = module?.lessons?.length || 0;
 
   const navigateToCourse = () => {
     navigate(`/course/${courseId}`);
@@ -148,29 +169,64 @@ export default function ModuleContent() {
     }
   };
 
-  // Mark lesson as complete
+  // Mark lesson as complete with backend-driven auto-navigation
   const markLessonComplete = async () => {
-    if (!currentLesson || !courseId) return;
+    if (!currentLesson || !courseId || !module) return;
 
+    setCompletingLesson(currentLesson.id);
+    
     try {
-      const result = await progressService.markLessonComplete(courseId, currentLesson.id);
+      const result = await progressService.markLessonComplete(currentLesson.id);
       if (result.success) {
-        // Update lesson status in local state
-        const updatedLessons = module.lessons.map(lesson =>
-          lesson.id === currentLesson.id
-            ? { ...lesson, completed: true }
-            : lesson
-        );
-        setModule({ ...module, lessons: updatedLessons });
+        const responseData = result.data as any;
+        
+        // Update lesson progress state immediately
+        setLessonProgress(prev => ({
+          ...prev,
+          [currentLesson.id]: true
+        }));
+        
+        // Update local module lessons
+        setModule(prev => prev ? {
+          ...prev,
+          lessons: prev.lessons.map((lesson: any) =>
+            lesson.id === currentLesson.id
+              ? { ...lesson, completed: true }
+              : lesson
+          )
+        } : null);
 
-        // Show success message
-        // You could add a toast notification here
-        console.log('Lesson marked as complete');
+        // Show toast notification
+        success('Lesson completed! ✓');
+
+        // Backend-driven auto-navigation
+        const nextLessonId = responseData?.next_lesson_id;
+        const nextModuleId = responseData?.next_module_id;
+        const isLastLesson = responseData?.is_last_lesson;
+
+        setTimeout(() => {
+          if (nextModuleId) {
+            // Move to next module
+            success(`Module complete! Moving to next module...`);
+            navigate(`/courses/${courseId}/modules/${nextModuleId}`);
+          } else if (nextLessonId) {
+            // Move to next lesson in same module
+            const nextLesson = module.lessons.find((l: any) => l.id === nextLessonId);
+            if (nextLesson) {
+              setCurrentLesson(nextLesson);
+            }
+          } else if (isLastLesson) {
+            // Last lesson in course
+            success('🎉 Course completed! Congratulations!');
+          }
+        }, 400);
       } else {
         console.error('Failed to mark lesson complete:', result.error);
       }
     } catch (error) {
       console.error('Error marking lesson complete:', error);
+    } finally {
+      setCompletingLesson(null);
     }
   };
 
@@ -227,6 +283,8 @@ export default function ModuleContent() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      
       {/* Module Header */}
       <div className="bg-white rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
@@ -241,7 +299,7 @@ export default function ModuleContent() {
             <div className="h-6 w-px bg-gray-300"></div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{course?.title}</h1>
-              <p className="text-gray-600">Module {module.order}: {module.title}</p>
+              <p className="text-gray-600">{module.title}</p>
             </div>
           </div>
 
@@ -255,7 +313,7 @@ export default function ModuleContent() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-sm text-gray-600 px-3">
-              Module {module.order} of {modules.length}
+              Week {module.order} of {modules.length}
             </span>
             <button
               onClick={navigateToNextModule}
@@ -267,14 +325,11 @@ export default function ModuleContent() {
           </div>
         </div>
 
-        {/* Module Progress */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div
-            className="bg-brand-blue h-2 rounded-full transition-all duration-300"
-            style={{ width: `${module.progress_percentage || 0}%` }}
-          ></div>
+        {/* ALX-style checklist progress - no percentage bar */}
+        <div className="flex items-center gap-2 text-sm">
+          <CheckCircle className="w-4 h-4 text-green-500" />
+          <span className="text-gray-600">{completedCount} of {totalLessons} lessons completed</span>
         </div>
-        <p className="text-sm text-gray-600">{module.progress_percentage || 0}% complete</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -301,8 +356,8 @@ export default function ModuleContent() {
                       {lesson.estimated_duration ? `${lesson.estimated_duration} min` : 'Duration TBD'}
                     </div>
                   </div>
-                  {getLessonStatus(lesson) === 'completed' && (
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  {isLessonCompleted(lesson.id) && (
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 animate-pulse" />
                   )}
                 </button>
               ))}
@@ -316,7 +371,7 @@ export default function ModuleContent() {
             <div className="bg-white rounded-lg border border-gray-200 p-8">
               <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <span>Module {module.order}</span>
+                  <span>Week {module.order}</span>
                   <span>•</span>
                   <span>Lesson {currentLesson.order}</span>
                 </div>

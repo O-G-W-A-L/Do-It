@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourseContext } from '../contexts/CourseContext';
 import { useAuth } from '../contexts/AuthContext';
+import { coursesService } from '../services/courses';
 import VideoPlayer from '../components/course/player/VideoPlayer';
 import RichContentRenderer from '../components/course/content/RichContentRenderer';
 import LiveProgressTracker from '../components/course/progress/LiveProgressTracker';
@@ -48,14 +49,21 @@ export default function CourseContent() {
         return;
       }
 
-      // Load course data with units
-      const courseResponse = await fetch(`/api/courses/courses/${courseId}/`);
-      const courseData = await courseResponse.json();
+      // Load course data with units using coursesService (includes auth)
+      const courseResult = await coursesService.getCourse(courseId);
+      
+      if (!courseResult.success || !courseResult.data) {
+        setError(courseResult.error || 'Failed to load course content');
+        setLoading(false);
+        return;
+      }
+
+      const courseData = courseResult.data;
 
       if (courseData.units && courseData.units.length > 0) {
         // Use units structure
         setUnits(courseData.units);
-        setCourse({ id: courseId, title: courseData.title });
+        setCourse({ id: Number(courseId), title: courseData.title });
 
         // Select first unit by default
         const firstUnit = courseData.units[0];
@@ -63,10 +71,10 @@ export default function CourseContent() {
         setModules(firstUnit.modules || []);
       } else {
         // Fallback to modules structure (backward compatibility)
-        const modulesResult = await getCourseModules(courseId);
-        if (modulesResult) {
-          setModules(modulesResult);
-          setCourse({ id: courseId, title: enrollment.course_title });
+        const modulesResult = await getCourseModules(Number(courseId));
+        if (modulesResult && Array.isArray(modulesResult)) {
+          setModules(modulesResult as any);
+          setCourse({ id: Number(courseId), title: enrollment.course_title });
         } else {
           setError('Failed to load course content');
           setLoading(false);
@@ -100,7 +108,7 @@ export default function CourseContent() {
     } finally {
       setLoading(false);
     }
-  }, [courseId, enrollments, getCourseModules, modules]);
+  }, [courseId, enrollments, getCourseModules]);
 
   useEffect(() => {
     loadCourseContent();
@@ -213,7 +221,7 @@ export default function CourseContent() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900 text-sm">
-                        Module {module.order}: {module.title}
+                        {module.title}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-1">

@@ -15,7 +15,7 @@ export default function Calendar() {
     if (enrollments && enrollments.length > 0) {
       generateCalendarEvents();
     }
-  }, [enrollments]);
+  }, [enrollments, getCourseModules]);
 
   const generateCalendarEvents = async () => {
     const calendarEvents = [];
@@ -23,43 +23,48 @@ export default function Calendar() {
     for (const enrollment of enrollments) {
       if (enrollment.status !== 'active' && enrollment.status !== 'completed') continue;
 
-      const course = enrollment.course;
+      // enrollment.course is a number (course ID), enrollment.course_title is the name
+      const courseId = enrollment.course;
+      const courseTitle = enrollment.course_title;
+      
+      if (!courseId) continue;
+
       const enrolledDate = new Date(enrollment.enrolled_at);
 
       // Add course start event
       calendarEvents.push({
         id: `course-start-${enrollment.id}`,
-        title: `Start: ${course.title}`,
+        title: `Start: ${courseTitle}`,
         start: enrolledDate.toISOString().split('T')[0],
         backgroundColor: '#10B981',
         borderColor: '#10B981',
         textColor: '#ffffff',
         extendedProps: {
           type: 'course_start',
-          courseId: course.id,
+          courseId: courseId,
           enrollmentId: enrollment.id
         }
       });
 
       // Fetch modules for this course
       try {
-        const modules = await getCourseModules(course.id);
+        const modules = await getCourseModules(courseId) as any[];
         if (modules && modules.length > 0) {
-          modules.forEach(module => {
+          modules.forEach((module: any) => {
             // Calculate module due date: enrolled_date + (module.order - 1) weeks
             const moduleDueDate = new Date(enrolledDate);
             moduleDueDate.setDate(moduleDueDate.getDate() + (module.order - 1) * 7);
 
             calendarEvents.push({
               id: `module-${enrollment.id}-${module.id}`,
-              title: `${course.title}: ${module.title}`,
+              title: `${courseTitle}: ${module.title}`,
               start: moduleDueDate.toISOString().split('T')[0],
               backgroundColor: '#3B82F6',
               borderColor: '#3B82F6',
               textColor: '#ffffff',
               extendedProps: {
                 type: 'module_due',
-                courseId: course.id,
+                courseId: courseId,
                 moduleId: module.id,
                 enrollmentId: enrollment.id
               }
@@ -67,27 +72,7 @@ export default function Calendar() {
           });
         }
       } catch (error) {
-        console.error('Error fetching modules for course:', course.id, error);
-      }
-
-      // Add course completion target if duration is available
-      if (course.duration_weeks) {
-        const completionDate = new Date(enrolledDate);
-        completionDate.setDate(completionDate.getDate() + course.duration_weeks * 7);
-
-        calendarEvents.push({
-          id: `course-complete-${enrollment.id}`,
-          title: `Complete: ${course.title}`,
-          start: completionDate.toISOString().split('T')[0],
-          backgroundColor: '#F59E0B',
-          borderColor: '#F59E0B',
-          textColor: '#ffffff',
-          extendedProps: {
-            type: 'course_completion',
-            courseId: course.id,
-            enrollmentId: enrollment.id
-          }
-        });
+        console.error('Error fetching modules for course:', courseId, error);
       }
     }
 
