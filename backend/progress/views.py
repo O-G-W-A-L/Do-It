@@ -372,7 +372,6 @@ def mentor_dashboard(request):
         ).count()
         
         # Get pending submissions from cohort members
-        from courses.models import Enrollment
         member_user_ids = [m.student.id for m in members]
         pending_submissions = AssignmentSubmission.objects.filter(
             student_id__in=member_user_ids,
