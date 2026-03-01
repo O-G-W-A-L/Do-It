@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.utils import timezone
 from .models import (
     LessonProgress, QuizSubmission, AssignmentSubmission,
-    StudentAnalytics, QuizQuestion, QuizAnswer, AssignmentRequirement
+    StudentAnalytics, QuizQuestion, QuizAnswer, AssignmentRequirement,
+    Cohort, CohortMember, PeerReviewRubric, PeerReviewAssignment
 )
 
 
@@ -253,3 +254,58 @@ class GradingSerializer(serializers.Serializer):
         ('A', 'Excellent'), ('B', 'Good'), ('C', 'Satisfactory'),
         ('D', 'Needs Improvement'), ('F', 'Fail')
     ], required=False)
+
+
+class CohortSerializer(serializers.ModelSerializer):
+    """Serializer for cohorts - ALX style"""
+    student_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Cohort
+        fields = [
+            'id', 'name', 'course', 'start_date', 'end_date',
+            'reviewers_per_submission', 'is_active', 
+            'student_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_student_count(self, obj):
+        return obj.student_count
+
+
+class CohortMemberSerializer(serializers.ModelSerializer):
+    """Serializer for cohort members"""
+    student_name = serializers.CharField(source='student.get_full_name', read_only=True)
+    
+    class Meta:
+        model = CohortMember
+        fields = ['id', 'cohort', 'student', 'student_name', 'joined_at']
+        read_only_fields = ['id', 'joined_at']
+
+
+class PeerReviewRubricSerializer(serializers.ModelSerializer):
+    """Serializer for peer review rubrics - ALX style"""
+    max_score = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = PeerReviewRubric
+        fields = [
+            'id', 'course', 'name', 'description', 'criteria',
+            'max_score', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class PeerReviewAssignmentSerializer(serializers.ModelSerializer):
+    """Serializer for peer review assignments - ALX style"""
+    submission_title = serializers.CharField(source='submission.lesson.title', read_only=True)
+    reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
+    
+    class Meta:
+        model = PeerReviewAssignment
+        fields = [
+            'id', 'submission', 'submission_title', 'reviewer', 'reviewer_name',
+            'status', 'rubric_scores', 'total_score', 'feedback',
+            'assigned_at', 'completed_at'
+        ]
+        read_only_fields = ['id', 'assigned_at']

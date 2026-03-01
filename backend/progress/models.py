@@ -338,3 +338,109 @@ class StudentAnalytics(models.Model):
             self.risk_level = 'low'
 
         return self.risk_level
+
+
+class Cohort(models.Model):
+    """
+    Student cohorts for peer review assignments - ALX style
+    """
+    name = models.CharField(max_length=100)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='cohorts')
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    
+    # Peer review settings
+    reviewers_per_submission = models.PositiveIntegerField(default=3, help_text="Number of peers to assign per submission")
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date']
+        unique_together = ['name', 'course']
+
+    def __str__(self):
+        return f"{self.name} - {self.course.title}"
+
+    @property
+    def student_count(self):
+        return self.members.count()
+
+
+class CohortMember(models.Model):
+    """
+    Membership in a cohort
+    """
+    cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE, related_name='members')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cohort_memberships')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['cohort', 'student']
+
+    def __str__(self):
+        return f"{self.student.username} in {self.cohort.name}"
+
+
+class PeerReviewRubric(models.Model):
+    """
+    Rubric criteria for peer reviews - ALX style
+    """
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='peer_review_rubrics')
+    name = models.CharField(max_length=200, help_text="e.g., Project Code Quality Rubric")
+    description = models.TextField(blank=True)
+    
+    # Rubric criteria stored as JSON
+    # [{"name": "Code Quality", "max_points": 10, "description": "Code is clean and well-organized"}]
+    criteria = models.JSONField(default=list)
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.course.title}"
+
+    @property
+    def max_score(self):
+        return sum(c.get('max_points', 0) for c in self.criteria)
+
+
+class PeerReviewAssignment(models.Model):
+    """
+    Assignment of submissions to peers for review - ALX style
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+    ]
+
+    submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='peer_reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='peer_review_tasks')
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Rubric scores stored as JSON
+    rubric_scores = models.JSONField(default=dict, blank=True)
+    total_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Feedback
+    feedback = models.TextField(blank=True)
+    
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['submission', 'reviewer']
+        indexes = [
+            models.Index(fields=['reviewer', 'status']),
+            models.Index(fields=['submission', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Peer Review: {self.submission.student.username}'s {self.submission.lesson.title} by {self.reviewer.username}"
