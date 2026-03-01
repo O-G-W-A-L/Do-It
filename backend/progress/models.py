@@ -187,7 +187,7 @@ class AssignmentSubmission(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
 
-    # Tiered deadlines (ALX-style)
+    # Tiered deadlines 
     tier_1_deadline = models.DateTimeField(null=True, blank=True, help_text="First deadline - 100% max score")
     tier_2_deadline = models.DateTimeField(null=True, blank=True, help_text="Second deadline - 65% max score")
     tier_3_deadline = models.DateTimeField(null=True, blank=True, help_text="Third/late deadline - 50% max score")
