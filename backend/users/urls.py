@@ -59,6 +59,7 @@ urlpatterns = [
     
     # Additional admin actions (explicit routing)
     path('management/stats/', admin_stats, name='admin-stats'),
+    path('management/all_cohorts/', UserManagementViewSet.as_view({'get': 'all_cohorts'}), name='all-cohorts'),
 
     # Admin invitation system
     path('admin/send-invitation/', send_admin_invitation),
